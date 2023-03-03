@@ -1,0 +1,1129 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kunlun-configmap
+data:
+  redis.conf: |
+    protected-mode no
+    bind 0.0.0.0
+    port 6379
+    tcp-backlog 511
+    timeout 0
+    tcp-keepalive 300
+    supervised no
+    pidfile /var/run/redis_6379.pid
+    loglevel notice
+    databases 16
+    always-show-logo yes
+    save 900 1
+    save 300 10
+    save 60 10000
+    stop-writes-on-bgsave-error yes
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+    slave-serve-stale-data yes
+    slave-read-only yes
+    repl-diskless-sync no
+    repl-diskless-sync-delay 5
+    repl-disable-tcp-nodelay no
+    slave-priority 100
+    maxclients 10000
+    maxmemory 1073741824
+    lazyfree-lazy-eviction no
+    lazyfree-lazy-expire no
+    lazyfree-lazy-server-del no
+    slave-lazy-flush no
+    appendonly no
+    appendfilename "appendonly.aof"
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+    aof-load-truncated yes
+    aof-use-rdb-preamble no
+    lua-time-limit 5000
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+    latency-monitor-threshold 0
+    notify-keyspace-events ""
+    hash-max-ziplist-entries 512
+    hash-max-ziplist-value 64
+    list-max-ziplist-size -2
+    list-compress-depth 0
+    set-max-intset-entries 512
+    zset-max-ziplist-entries 128
+    zset-max-ziplist-value 64
+    hll-sparse-max-bytes 3000
+    activerehashing yes
+    client-output-buffer-limit normal 0 0 0
+    client-output-buffer-limit slave 256mb 64mb 60
+    client-output-buffer-limit pubsub 32mb 8mb 60
+    hz 10
+    aof-rewrite-incremental-fsync yes
+    requirepass zhuolang@Troila@123
+
+  init_sql: |
+    DROP DATABASE IF EXISTS klcloud_prmp;
+    CREATE DATABASE klcloud_prmp DEFAULT charset utf8mb4 COLLATE utf8mb4_general_ci;
+    USE klcloud_prmp;
+    SET NAMES utf8mb4;
+    SET FOREIGN_KEY_CHECKS = 0;
+
+    -- ----------------------------
+    -- Table structure for req_comment
+    -- ----------------------------
+    DROP TABLE IF EXISTS `req_comment`;
+    CREATE TABLE `req_comment`(
+                                  `uuid`         varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'UUID',
+                                  `require_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '需求UUID',
+                                  `content`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci        NULL COMMENT '评论内容',
+                                  `status`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '需求状态',
+                                  `createtime`   datetime(0)                                                  NULL DEFAULT NULL COMMENT '创建时间',
+                                  `createpin`    varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                  `updatetime`   datetime(0)                                                  NULL DEFAULT NULL COMMENT '修改时间',
+                                  `updatepin`    varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                  `yn`           tinyint(2)                                                   NULL DEFAULT 1 COMMENT '删除状态：1正常，0删除'
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '需求评论表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of req_comment
+    -- ----------------------------
+
+    -- ----------------------------
+    -- Table structure for req_demand
+    -- ----------------------------
+    DROP TABLE IF EXISTS `req_demand`;
+    CREATE TABLE `req_demand`  (
+                                  `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'UUID',
+                                  `sequence` int(11) NOT NULL AUTO_INCREMENT COMMENT '序号',
+                                  `title` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '需求标题',
+                                  `product_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '所属产品uuid',
+                                  `project_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '项目名称',
+                                  `project_origin` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '项目来源',
+                                  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '需求描述：富文本形式，支持图片、文字、链接、表格...等',
+                                  `asset` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
+                                  `origin` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '需求来源：内部需求、客户需求、市场调研、技术需求',
+                                  `status` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '需求状态：未处理、待评审、待规划、已规划、已完成',
+                                  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '需求类型：技术支持、系统需求、业务需求',
+                                  `priority` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '紧急程度：high、normal、low',
+                                  `version` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '已规划版本号',
+                                  `chargepin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '负责人',
+                                  `tech_chargepin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '技服负责人',
+                                  `prod_chargepin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '产品负责人',
+                                  `starttime` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+                                  `endtime` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+                                  `solution` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '解决方案',
+                                  `createpin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '创建人(提交人)',
+                                  `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                  `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                  `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                  `updatepin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                  PRIMARY KEY (`uuid`) USING BTREE,
+                                  UNIQUE INDEX `sequence_UNIQUE`(`sequence`) USING BTREE
+    ) ENGINE = InnoDB AUTO_INCREMENT = 68 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '需求表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of req_demand
+    -- ----------------------------
+
+    -- ----------------------------
+    -- Table structure for req_product
+    -- ----------------------------
+    DROP TABLE IF EXISTS `req_product`;
+    CREATE TABLE `req_product`
+    (
+        `uuid`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL COMMENT 'UUID',
+        `name`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NOT NULL COMMENT '产品名称',
+        `description` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+        `createtime`  datetime(0)                                                    NULL DEFAULT NULL COMMENT '创建时间',
+        `createpin`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT NULL COMMENT '创建人',
+        `updatetime`  datetime(0)                                                    NULL DEFAULT NULL COMMENT '修改时间',
+        `updatepin`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci   NULL DEFAULT NULL COMMENT '修改人',
+        `yn`          tinyint(2)                                                     NULL DEFAULT 1 COMMENT '删除状态：1正常，0删除'
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '产品表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of req_product
+    -- ----------------------------
+
+    -- ----------------------------
+    -- Table structure for sys_dict
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_dict`;
+    CREATE TABLE `sys_dict`
+    (
+        `uuid`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NOT NULL COMMENT 'UUID',
+        `type`        varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '字典类型',
+        `value`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '字典名称',
+        `code`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '英文值',
+        `sort`        int(20)                                                       NULL DEFAULT NULL COMMENT '排序',
+        `description` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+        `createtime`  datetime(0)                                                   NULL DEFAULT NULL COMMENT '创建时间',
+        `createpin`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '创建人',
+        `updatetime`  datetime(0)                                                   NULL DEFAULT NULL COMMENT '修改时间',
+        `updatepin`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci  NULL DEFAULT NULL COMMENT '修改人',
+        `yn`          tinyint(2)                                                    NULL DEFAULT 1 COMMENT '删除状态：1正常，0删除',
+        PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_dict
+    -- ----------------------------
+    INSERT INTO `sys_dict` VALUES ('1', 'requireType', '应用需求', 'applicationRequire', 1, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('12', 'requireOrigin', '客户需求', 'customerRequire', 21, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('13', 'requireOrigin', '市场调研', 'marketSurvey', 22, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('14', 'requireOrigin', '技术需求', 'technicalRequire', 23, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('15', 'requireOrigin', '内部需求', 'internalRequire', 24, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('2', 'requireType', '系统需求', 'systemRequire', 2, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('21', 'projectOrigin', '教育', 'education', 100, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('22', 'projectOrigin', '医疗', 'medical', 101, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('23', 'projectOrigin', '公安', 'police', 102, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('25', 'projectOrigin', '公检法', 'minor', 103, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('26', 'projectOrigin', '运营商', 'operator', 104, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('27', 'projectOrigin', '企业', 'company', 105, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('28', 'projectOrigin', '制造业', 'manufacturing', 106, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('29', 'projectOrigin', '金融', 'financial', 107, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('30', 'projectOrigin', '银行', 'bank', 108, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('31', 'projectOrigin', '电商', 'electricity', 109, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('34', 'projectOrigin', '政府', 'techHandle', 110, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('50', 'requireStatus', '技服未处理', 'techPreHandle', 200, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('51', 'requireStatus', '技服已处理', 'techHandle', 201, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('52', 'requireStatus', '已完成', 'fixed', 202, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('53', 'requireStatus', '待评审', 'preReview', 203, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('54', 'requireStatus', '待规划', 'prePlan', 204, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('55', 'requireStatus', '已规划', 'planed', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('70', 'requireSolution', '不予解决', 'careless', 220, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('71', 'requireSolution', '延期处理', 'handleDelay', 221, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('72', 'requireSolution', '已解决', 'fixed', 222, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('73', 'requireSolution', '无法复现', 'unrecurrent', 223, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('74', 'requireSolution', '外部原因', 'externalCauses', 224, NULL, NULL, NULL, NULL, NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_file
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_file`;
+    CREATE TABLE `sys_file`  (
+                                `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'uuid',
+                                `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '名称',
+                                `path` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '存储路径',
+                                `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '文件类型',
+                                `biz_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '关联业务uuid',
+                                `size` bigint(20) NULL DEFAULT NULL COMMENT '文件大小',
+                                `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                `createpin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                `updatetime` datetime(0) NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP(0) COMMENT '修改时间',
+                                `updatepin` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
+                                `yn` tinyint(2) NULL DEFAULT NULL,
+                                PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '文件表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_file
+    -- ----------------------------
+
+    -- ----------------------------
+    -- Table structure for sys_log_operation
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_log_operation`;
+    CREATE TABLE `sys_log_operation`  (
+                                          `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '操作日志UUID',
+                                          `user_account` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '用户名',
+                                          `user_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '用户姓名',
+                                          `module` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作模块',
+                                          `action` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '执行动作',
+                                          `target` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '执行动作目标',
+                                          `target_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作对象UUID',
+                                          `target_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '操作对象名称',
+                                          `status` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '状态【success】【pending】【fail】',
+                                          `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息',
+                                          `messageExtra` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '错误信息附加参数',
+                                          `ip` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '客户端访问IP',
+                                          `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+                                          `end_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+                                          `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                          `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '创建人',
+                                          `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                          `updatepin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '修改人',
+                                          `yn` tinyint(2) NULL DEFAULT 1 COMMENT '删除状态：1正常，0删除',
+                                          PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '系统操作日志' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_log_operation
+    -- ----------------------------
+
+    -- ----------------------------
+    -- Table structure for sys_permission
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_permission`;
+    CREATE TABLE `sys_permission`  (
+                                      `uuid` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键uuid',
+                                      `parent_uuid` int(11) NULL DEFAULT NULL COMMENT '父主键uuid',
+                                      `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限名称',
+                                      `code` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限code',
+                                      `visible` tinyint(2) NULL DEFAULT NULL COMMENT '显示状态（1显示 0隐藏）',
+                                      `sort` int(11) NULL DEFAULT 0 COMMENT '排序',
+                                      `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限描述',
+                                      `type` char(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限类型（menu目录 func按钮）',
+                                      `icon` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '图标',
+                                      `mode` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '模式（ALL,VDI,VOI）',
+                                      `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                      `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                      `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                      `updatepin` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                      `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                      PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB AUTO_INCREMENT = 839 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '权限表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_permission
+    -- ----------------------------
+    INSERT INTO `sys_permission` VALUES (751, 0, '需求管理', '1', 1, 2, '', 'func', NULL, '', '2022-09-13 10:36:20', NULL, '2022-09-14 14:22:02', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (752, 1, '创建', 'req:demand:create', 1, 0, '', 'func', NULL, '', '2022-09-13 10:37:57', NULL, '2022-09-13 11:04:24', NULL, 0);
+    INSERT INTO `sys_permission` VALUES (753, 0, '需求管理', '1', 1, 0, '', 'menu', NULL, '', '2022-09-13 10:51:04', NULL, '2022-09-13 10:51:42', NULL, 0);
+    INSERT INTO `sys_permission` VALUES (754, 751, '创建需求', 'req:demand:create', 1, 1, '', 'func', NULL, '', '2022-09-13 11:04:36', NULL, '2022-09-14 15:31:36', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (755, 0, '工作台', 'WorkbenchOverView', 1, 1, '', 'menu', NULL, '', '2022-09-13 14:13:32', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (756, 0, '需求管理', 'Demand', 1, 2, '', 'menu', NULL, '', '2022-09-13 14:14:05', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (757, 0, '技服管理', 'Technical', 1, 3, '', 'menu', NULL, '', '2022-09-13 14:14:59', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (758, 0, '产品管理', 'Product', 1, 4, '', 'menu', NULL, '', '2022-09-13 14:15:39', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (759, 758, '需求', 'ProductRequirement', 1, 1, '', 'menu', NULL, '', '2022-09-13 14:16:37', NULL, '2022-09-13 14:17:15', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (760, 758, '产品', 'ProductProduct', 1, 2, '', 'menu', NULL, '', '2022-09-13 14:17:31', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (761, 0, '需求池', 'DemandPool', 1, 5, '', 'menu', NULL, '', '2022-09-13 14:18:13', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (762, 761, '需求池', 'DemandPoolDemandPool', 1, 1, '', 'menu', NULL, '', '2022-09-13 14:18:36', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (763, 761, '线索池', 'DemandPoolCluePool', 1, 2, '', 'menu', NULL, '', '2022-09-13 14:18:53', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (764, 761, '已规划需求池', 'DemandPoolPlanedPool', 1, 3, '', 'menu', NULL, '', '2022-09-13 14:19:17', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (765, 761, '已完成技术问题', 'DemandPoolFTechnology', 1, 4, '', 'menu', NULL, '', '2022-09-13 14:23:12', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (766, 761, '已完成需求', 'DemandPoolFDemand', 1, 5, '', 'menu', NULL, '', '2022-09-13 14:23:30', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (767, 0, '平台管理', 'Platform', 1, 6, '', 'menu', NULL, '', '2022-09-13 14:24:14', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (768, 767, '成员管理', 'PlatformUser', 1, 1, '', 'menu', NULL, '', '2022-09-13 14:24:40', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (769, 767, '角色管理', 'PlatformRole', 1, 2, '', 'menu', NULL, '', '2022-09-13 14:24:54', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (770, 0, '动态管理', 'Log', 1, 7, '', 'menu', NULL, '', '2022-09-13 14:25:28', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (771, 751, '更新需求', 'req:demand:update', 1, 0, '', 'func', NULL, '', '2022-09-13 17:57:20', NULL, '2022-09-14 15:31:01', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (772, 751, '删除需求', 'req:demand:delete', 1, 0, '', 'func', NULL, '', '2022-09-13 17:57:45', NULL, '2022-09-14 15:31:09', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (773, 751, '需求详情', 'req:demand:detail', 1, 0, '', 'func', NULL, '', '2022-09-13 17:58:27', NULL, '2022-09-14 15:31:17', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (774, 751, '需求列表', 'req:demand:page', 1, 0, '', 'func', NULL, '', '2022-09-13 18:01:19', NULL, '2022-09-14 15:31:25', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (775, 0, '产品管理', '2', 1, 4, '', 'func', NULL, '', '2022-09-13 18:21:45', NULL, '2022-09-14 14:35:36', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (776, 775, '统计信息', 'req:demand:projetmanage', 1, 0, '', 'func', NULL, '', '2022-09-13 18:22:31', NULL, '2022-09-14 14:33:35', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (777, 751, '我待办的需求', 'req:demand:backloglist', 1, 0, '', 'func', NULL, '', '2022-09-13 18:25:44', NULL, '2022-09-14 14:40:37', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (778, 775, '我已办的需求', 'req:demand:projectfixedlist', 1, 0, '', 'func', NULL, '', '2022-09-13 18:54:07', NULL, '2022-09-14 14:41:29', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (779, 0, '需求池', '3', 1, 5, '', 'func', NULL, '', '2022-09-13 18:54:48', NULL, '2022-09-14 14:35:49', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (780, 779, '需求池', 'req:demand:demandpool', 1, 0, '', 'func', NULL, '', '2022-09-13 18:56:03', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (781, 779, '线索池', 'req:demand:cluepool', 1, 0, '', 'func', NULL, '', '2022-09-13 18:56:37', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (782, 779, '已规划需求池', 'req:demand:planedpool', 1, 0, '', 'func', NULL, '', '2022-09-13 18:57:11', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (783, 779, '已完成技术问题', 'req:demand:techsupfixedpool', 1, 0, '', 'func', NULL, '', '2022-09-13 18:57:37', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (784, 779, '已完成需求', 'req:demand:fixedpool', 1, 0, '', 'func', NULL, '', '2022-09-13 18:58:11', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (785, 779, '完成', 'req:demand:finish', 1, 2300, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:29:20', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (786, 796, '已解决', 'req:demand:resolved', 1, 2100, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:28:47', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (787, 775, '驳回', 'req:demand:reject', 1, 1000, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:29:55', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (788, 779, '激活', 'req:demand:activate', 1, 1000, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:30:38', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (789, 751, '需求管理', 'req:demand:mydemand', 1, 60, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 14:32:23', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (790, 797, '工作台统计信息', 'req:demand:dashboard', 1, 110, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-13 20:19:36', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (791, 796, '统计信息', 'req:demand:techsupmanage', 1, 120, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-13 20:22:23', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (792, 796, '我已办的需求', 'req:demand:techfixedlist', 1, 10, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 14:41:24', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (793, 775, '评审', 'req:demand:review', 1, 1000, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:30:03', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (794, 796, '流转', 'req:demand:circulation', 1, 2000, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:28:32', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (795, 796, '撤销', 'req:demand:revoke', 1, 2200, NULL, 'func', NULL, '', '2022-09-13 19:02:59', NULL, '2022-09-14 15:30:21', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (796, 0, '技服管理', '4', 1, 3, '', 'func', NULL, '', '2022-09-13 20:11:49', NULL, '2022-09-14 14:27:26', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (797, 0, '工作台', '5', 1, 1, '', 'func', NULL, '', '2022-09-13 20:19:10', NULL, '2022-09-14 14:21:48', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (798, 0, '平台管理', 'system', 1, 6, '', 'func', NULL, '', '2022-09-14 09:29:09', NULL, '2022-09-14 14:58:06', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (799, 798, '角色管理', 'system:role', 1, 10, '', 'func', NULL, '', '2022-09-14 09:29:56', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (800, 799, '查询角色所绑定的权限', 'system:role:permission', 1, 90, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (801, 799, '功能授权', 'system:role:permission:update', 1, 100, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (802, 799, '创建角色', 'system:role:create', 1, 30, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (803, 799, '分页查看角色列表', 'system:role:page', 1, 10, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (804, 799, '查询角色详情', 'system:role:detail', 1, 20, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (805, 799, '编辑角色', 'system:role:update', 1, 40, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (806, 799, '复制角色', 'system:role:clone', 1, 50, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (807, 799, '删除角色', 'system:role:delete', 1, 70, NULL, 'func', NULL, '', '2022-09-14 09:31:14', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (808, 775, '分页查看产品列表', 'process:product:page', 1, 10, NULL, 'func', NULL, '', '2022-09-14 09:52:44', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (809, 775, '创建产品', 'process:product:create', 1, 20, NULL, 'func', NULL, '', '2022-09-14 09:52:44', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (810, 775, '编辑产品', 'process:product:update', 1, 30, NULL, 'func', NULL, '', '2022-09-14 09:52:44', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (811, 775, '删除产品', 'process:product:delete', 1, 40, NULL, 'func', NULL, '', '2022-09-14 09:52:44', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (812, 775, '产品详情', 'process:product:detail', 1, 50, NULL, 'func', NULL, '', '2022-09-14 09:52:44', NULL, NULL, NULL, 0);
+    INSERT INTO `sys_permission` VALUES (813, 798, '成员管理', 'system:user', 1, 2000, '', 'func', NULL, '', '2022-09-14 13:54:53', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (814, 813, '获取用户列表分页', 'system:user:page', 1, 100, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (815, 813, '获取用户信息', 'system:user:get', 1, 200, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (816, 813, '修改用户', 'system:user:update', 1, 500, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (817, 813, '批量删除用户', 'system:user:delete', 1, 600, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (818, 813, '新增用户', 'system:user:create', 1, 400, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (819, 813, '获取用户信息列表', 'system:user:list', 1, 300, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (820, 813, '重置密码', 'system:user:resetPwd', 1, 700, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (821, 813, '启用用户', 'system:user:enableUser', 1, 800, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (822, 813, '禁用用户', 'system:user:disableUser', 1, 900, NULL, 'func', NULL, '', '2022-09-14 13:56:27', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (823, 0, '动态管理', 'system:log', 1, 7, '', 'func', NULL, '', '2022-09-14 14:43:41', NULL, '2022-09-14 14:57:53', NULL, 1);
+    INSERT INTO `sys_permission` VALUES (824, 823, '动态列表', 'system:log:operation:page', 1, 1, '', 'func', NULL, '', '2022-09-14 14:44:09', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (830, 775, '分页查看产品列表', 'require:product:page', 1, 10, NULL, 'func', NULL, '', '2022-09-14 14:56:32', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (831, 775, '修改产品 ', 'require:product:update', 1, 30, NULL, 'func', NULL, '', '2022-09-14 14:56:32', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (832, 775, '批量删除产品 ', 'require:product:delete', 1, 40, NULL, 'func', NULL, '', '2022-09-14 14:56:32', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (833, 775, '新增产品 ', 'require:product:create', 1, 20, NULL, 'func', NULL, '', '2022-09-14 14:56:32', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (834, 775, '查询产品详情', 'require:product:detail', 1, 50, NULL, 'func', NULL, '', '2022-09-14 14:56:32', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (835, 751, '评论列表', 'require:comment:page', 1, 10, NULL, 'func', NULL, '', '2022-09-14 15:05:19', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (836, 751, '删除评论', 'require:comment:delete', 1, 40, NULL, 'func', NULL, '', '2022-09-14 15:05:19', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (837, 751, '发表评论', 'require:comment:create', 1, 20, NULL, 'func', NULL, '', '2022-09-14 15:05:19', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (838, 751, '评论详情', 'require:comment:detail', 1, 50, NULL, 'func', NULL, '', '2022-09-14 15:05:19', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_permission` VALUES (839, 779, '删除线索池', 'req:demand:cluepooldelete', 1, 50, NULL, 'func', NULL, '', '2022-09-14 15:05:19', NULL, NULL, NULL, 1);
+    -- ----------------------------
+    -- Table structure for sys_role
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_role`;
+    CREATE TABLE `sys_role`  (
+                                `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色UUID',
+                                `name` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '角色名称',
+                                `status` tinyint(2) NULL DEFAULT NULL COMMENT '角色状态：0-禁用 1-启用',
+                                `type` tinyint(2) NULL DEFAULT 0 COMMENT '用户类型：0-管理员 1-员工',
+                                `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '描述',
+                                `default_flag` tinyint(2) NULL DEFAULT NULL COMMENT '默认角色：0-否 1-是',
+                                `display` tinyint(2) NOT NULL DEFAULT 1 COMMENT '是否显示：0-否 1-是',
+                                `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                `updatepin` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_role
+    -- ----------------------------
+    INSERT INTO `sys_role` VALUES ('0', 'super', 1, 0, 'super角色', 0, 0, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_role` VALUES ('1', '提出人', 1, 0, '提出人', 1, 1, '2022-09-07 16:40:42', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_role` VALUES ('2', '技服部门', 1, 0, '技服部门', 1, 1, '2022-09-07 16:40:46', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_role` VALUES ('3', '产品部门', 1, 0, '产品部门', 1, 1, '2022-09-07 16:40:48', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_role` VALUES ('4', '管理员', 1, 0, '管理员', 1, 1, '2022-09-07 16:40:50', NULL, NULL, NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_role_permission
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_role_permission`;
+    CREATE TABLE `sys_role_permission`  (
+                                            `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'UUID',
+                                            `role_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色uuid',
+                                            `permission_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '权限code',
+                                            `permission_type` char(4) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '权限类型 func-按钮 menu-目录',
+                                            `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                            `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                            `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                            `updatepin` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                            `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                            PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色权限关联表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_role_permission
+    -- ----------------------------
+    INSERT INTO `sys_role_permission` VALUES ('016e375f-724c-42f7-b99f-c7090ae6e6d0', '3', 'ProductProduct', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('02855da2-2cd0-4d08-86f1-37fd963efd34', '2', 'req:demand:resolved', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('02efe1ae-5e3e-4eb8-9d6a-fe2fe96dc0a0', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'PlatformUser', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('032e6c96-89c1-4b6e-9d69-e8a40551e0bd', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:update', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0569ac9e-c07a-4fdd-b1af-9fed2a3baf86', '051456d9-eecb-43a9-afaa-c770d1228224', '1', 'func', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('062a456c-7914-432f-ad94-7a7379a22358', '3', 'req:demand:planedpool', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('07524eeb-bc7c-4728-b2d5-3b6b849af8f9', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:backloglist', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('08b8e13a-6bbc-4bec-875d-421fc81af2ff', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:detail', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('09c7364a-85c8-4a79-bb93-e4b24958c669', 'ac1f3abc-a552-4212-8898-8cb207343706', '6', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('09e7fa8b-7a85-4580-8b9a-92ca18520e82', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'ProductRequirement', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0a9bafa2-e6d0-4576-bcec-d1e53f4e67d1', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'DemandPoolCluePool', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0ab5b2bd-5761-4918-ba84-60595963d4ec', '1', 'require:comment:delete', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0c0dcd61-dade-4fda-a5f6-fbfec68eff60', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:clone', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0c56accb-54ba-49e6-aa97-06d603df17e5', '051456d9-eecb-43a9-afaa-c770d1228224', 'ProductRequirement', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0c93a5f3-1c16-4555-8a2a-d24bc369f8bd', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'ProductProduct', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0cfbe0a4-6ed4-41dc-a18b-27d685e26fde', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'req:demand:create', 'func', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0d669f7d-f3e4-4607-aae9-5bbb77e25bc9', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'Product', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('0f50e5b3-8b65-4e98-9cec-0ce3adc93564', '2', 'req:demand:demandpool', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('110b89e6-6f2c-40e3-a982-35e49141b492', '3', 'req:demand:review', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1363051a-e0a5-4304-becc-427b1ccf93dd', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'Product', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('13bffe0e-7f7b-4a2c-aec8-27948d72b105', 'ac1f3abc-a552-4212-8898-8cb207343706', 'WorkbenchOverView', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1679bba3-be05-4e1f-a598-d2c5bb67f321', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:resolved', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('17d65451-5ae7-4bba-a7ea-0fd76365c2f0', '4', 'system:user:page', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1915b00e-c9d2-47ca-b5b9-340f1663cb07', '4', 'system:user:list', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('194ebd8a-49af-4f1d-a6d4-9a695509c80d', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:circulation', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1a10c1c8-7720-4aac-a417-ef3e7d584b9c', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:permission', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1a2f6d98-8254-4577-b888-301da61e788f', '3', 'req:demand:reject', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1a4c0567-d4e4-4443-b2eb-95ed8998aa64', '3', 'require:comment:page', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d243bde-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:update', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d243f6e-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:delete', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244000-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:detail', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244057-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:page', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2440b6-33c6-11ed-b726-0242c0a8fe0c', '0', '2', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244103-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:projetmanage', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244155-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:backloglist', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d24422e-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:projectfixedlist', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d24427e-33c6-11ed-b726-0242c0a8fe0c', '0', '3', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2442c6-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:demandpool', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244309-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:cluepool', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d24434d-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:planedpool', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244391-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:techsupfixedpool', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2443d3-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:fixedpool', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244416-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:finish', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d24445c-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:resolved', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2444a0-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:reject', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2444e2-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:activate', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244524-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:mydemand', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244569-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:dashboard', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2445af-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:techsupmanage', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244698-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:techfixedlist', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2446de-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:review', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d24471e-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:circulation', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d244762-33c6-11ed-b726-0242c0a8fe0c', '0', 'req:demand:revoke', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2447a4-33c6-11ed-b726-0242c0a8fe0c', '0', '4', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1d2447e3-33c6-11ed-b726-0242c0a8fe0c', '0', '5', 'func', '2022-09-14 08:42:30', NULL, '2022-09-14 08:42:30', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1dfe5e3d-fdb1-47f4-8f20-e3e0bb6930e0', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'DemandPoolFDemand', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1eaf3ae8-d0a1-46fc-81bd-1221bf87cffe', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'DemandPoolFDemand', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('1fe352da-96a2-436e-bbfc-e67ec91307b5', '520dc577-b87d-4f2e-8470-427ed7e11d84', '4', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('20501fc4-bc15-4587-b28b-cad474472e61', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'DemandPoolPlanedPool', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('20bbb97d-3a3b-49a7-9b5a-4e93847de8dc', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'Log', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('214407af-12b0-4a7a-a83e-e386ef8c5cd0', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:page', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a12f5-3402-11ed-b726-0242c0a8fe0c', '0', 'system', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a1729-3402-11ed-b726-0242c0a8fe0c', '0', 'system:log', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a17ab-3402-11ed-b726-0242c0a8fe0c', '0', 'require:product:page', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a1813-3402-11ed-b726-0242c0a8fe0c', '0', 'require:product:update', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a185f-3402-11ed-b726-0242c0a8fe0c', '0', 'require:product:delete', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a18b7-3402-11ed-b726-0242c0a8fe0c', '0', 'require:product:create', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a18fe-3402-11ed-b726-0242c0a8fe0c', '0', 'require:product:detail', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a1940-3402-11ed-b726-0242c0a8fe0c', '0', 'require:comment:page', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a1983-3402-11ed-b726-0242c0a8fe0c', '0', 'require:comment:delete', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a19ca-3402-11ed-b726-0242c0a8fe0c', '0', 'require:comment:create', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('228a1a09-3402-11ed-b726-0242c0a8fe0c', '0', 'require:comment:detail', 'func', '2022-09-14 15:52:09', NULL, '2022-09-14 15:52:09', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('22a46baa-db4b-40ef-bdcc-eaa09eca0462', '2', '5', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('230c9551-165b-4776-92f5-1ee74dc82f16', '3', 'req:demand:activate', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('23c61a61-1407-49ed-9b12-f0abf83c149d', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:page', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2414ae98-9f67-4f03-840c-cc30c09415ef', '1', 'req:demand:planedpool', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('24508d63-919c-4653-ab9f-00c56343cde9', '2', 'DemandPoolFDemand', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2487ed7a-bece-47b8-9a4a-66f1bfba9b01', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:reject', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('25b4427b-4165-4143-8467-e8e98b9cc174', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'DemandPoolFDemand', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('26ddb8c2-1d99-4590-82ad-1a7482af3af5', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'Demand', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('276041cf-6777-4b5d-99a2-f39f66fc8e9e', '051456d9-eecb-43a9-afaa-c770d1228224', 'DemandPoolDemandPool', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2769236f-5263-4a1e-8102-2257b6ee2dc6', '2', 'req:demand:create', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2bb151e0-5130-47bf-9dad-9d7ae708c881', '1', 'req:demand:detail', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2bf5bcf6-da76-4d02-8225-2efe0d33ae1f', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:circulation', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2d20028e-5eb8-46ae-b272-db82c60a4b15', '1', 'require:comment:page', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2d2a0774-abbd-4afa-ba5a-1e5957562da0', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:page', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2d62fd74-69a5-497e-a5e0-b027272f3370', '051456d9-eecb-43a9-afaa-c770d1228224', 'Platform', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('2f10d216-c0d2-4cdf-adc5-441d1a3fc6fa', '4', 'Platform', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('318046c2-6eb8-4293-a65d-2a0906793d99', '2', 'req:demand:mydemand', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('31ed3c5a-2bd0-490d-a585-4ade25a21f67', 'ac1f3abc-a552-4212-8898-8cb207343706', 'Demand', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3208e328-a4a2-44a7-8412-876d593a0bad', '4', 'system:log:operation:page', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('320b4649-a1b8-4136-9571-45cf1ccaab6e', '520dc577-b87d-4f2e-8470-427ed7e11d84', '3', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('328dcfa6-a5df-4ce2-aada-6c52822685d6', 'ac1f3abc-a552-4212-8898-8cb207343706', 'Log', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('32b6c716-a783-4b5a-bbf2-3787843dbb0c', '4', 'system:log', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('32f5e33d-a041-4c31-af89-d745b02ea1df', 'ac1f3abc-a552-4212-8898-8cb207343706', 'ProductRequirement', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('347a54e6-9c6e-4d2a-944b-f1fe3061028c', '2', 'require:comment:page', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('34bd0d71-80af-47f1-932c-a8f26a6fd097', '2', '4', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('34fa9414-7a98-49b6-a7d2-000b60831736', 'ac1f3abc-a552-4212-8898-8cb207343706', 'DemandPool', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('351052e6-5041-45bc-96ee-841e0560b565', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'Log', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('35262e94-9650-4184-a0e1-a125d53c94ca', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'PlatformUser', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('35339a16-68de-4179-8bc5-e839d2afdb03', '3', 'require:product:update', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('35f5d3b4-84b4-444d-8b5d-b7abcc070d55', '051456d9-eecb-43a9-afaa-c770d1228224', 'PlatformUser', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('366809b1-d151-4d50-a773-546478801567', '4', '5', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('36f172cb-319d-4ee5-9fb7-e7949330cca6', '3', 'Product', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('37447ce4-ae52-4efd-bd5b-8e91058ee3bb', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:permission', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3760eeef-38f3-4e31-87b6-c3255f53ed22', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'PlatformUser', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('37aefcd3-cf49-47cc-952c-a86d309b1eee', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'ProductProduct', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('38b5249c-7a47-4014-b5cb-1e90f2d82f70', '2', 'req:demand:cluepool', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('39374412-9421-4697-9496-b51e905557f1', '4', 'DemandPool', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3b10123c-c352-4737-baff-320c098bb8b8', 'ac1f3abc-a552-4212-8898-8cb207343706', 'DemandPoolPlanedPool', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3bbff898-910a-414e-b4e7-c626022d3211', '4', 'Demand', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b1eb-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b565-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:page', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b5e7-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:get', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b641-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:update', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b68c-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:delete', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b6dc-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:create', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1b722-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:list', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1d562-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:resetPwd', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1d653-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:enableUser', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3be1d74c-33f2-11ed-b726-0242c0a8fe0c', '0', 'system:user:disableUser', 'func', '2022-09-14 13:58:19', NULL, '2022-09-14 13:58:19', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3c0c3a44-4824-4d64-b207-0bc74026b277', '3', 'req:demand:backloglist', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3c0f9f0f-afe6-4e8b-83f0-dd6196abe75b', '3', 'req:demand:update', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3c17d5e7-5d58-4ace-acda-005d2931b43a', '1', 'require:comment:detail', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3cd666f1-f2e0-4449-b754-87af59642f24', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'Product', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3d6a265b-6e79-414f-8f1f-ed5114d7ce09', '051456d9-eecb-43a9-afaa-c770d1228224', 'DemandPoolPlanedPool', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3df515ab-162d-4a7b-bd58-745429d1f60e', '2', 'req:demand:fixedpool', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3e2b70ed-21fa-43e8-b314-7198d8fd5b28', '051456d9-eecb-43a9-afaa-c770d1228224', 'WorkbenchOverView', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3e55dd02-c7ce-4a5c-8732-dd00ffcb66b8', '3', 'require:product:create', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3e79fefe-2d77-41cd-925e-213837bf3f6c', '3', 'require:product:detail', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3ed36b89-c901-491d-ab3e-056900fa7c1f', '4', 'req:demand:page', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3f00d5b9-5ade-4eda-bb8f-3291a8eb7014', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:update', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3f101c62-f67a-41a7-9456-804a54772f2c', '4', 'req:demand:cluepool', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3f10e25b-58b7-44c5-a093-07c7573160bf', 'ac1f3abc-a552-4212-8898-8cb207343706', 'DemandPoolCluePool', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('3fcaaa77-88c2-436e-9e15-b7e8b91cd80c', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'PlatformRole', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4065b583-e695-4078-aad5-51c132c77388', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'DemandPoolDemandPool', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('40ba1b6f-e90f-4283-a689-581601e9ffe9', '2', '1', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('41a3d50e-dace-4c70-8a5f-1be69579352d', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'DemandPoolCluePool', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4319433a-aac8-482a-a66c-9f45cc0700fc', '3', 'require:product:page', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('43bfc39d-d0bd-4287-b37b-09bc24c0aec1', '2', 'require:comment:detail', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('445679c5-67c1-4e1b-a9b0-33bf273716b2', '1', 'req:demand:create', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('44e037b1-f3b1-4359-8e38-62f80f8483c5', '3', '1', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('452ff008-24df-46a1-b28f-3356868b42d8', '1', 'req:demand:mydemand', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('455ab6a5-46d7-4699-a66a-3ba7e7900ef5', '2', 'DemandPool', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('456bab63-8746-4bcc-bcd0-306da1ef9bed', '4', 'system:user:delete', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('45a21e99-455b-4a47-9441-945de3152609', '4', 'req:demand:dashboard', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4628a104-1e54-4e20-8856-ecd10ea557c2', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:fixedpool', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('47b3804e-bb47-4479-ab7e-2e51e0c98338', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:projectfixedlist', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('47f1be5e-698b-41b4-ba48-15de798c916d', '2', 'req:demand:planedpool', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('48ebf8b2-a541-4cfe-adb3-3112097c712f', 'ac1f3abc-a552-4212-8898-8cb207343706', 'PlatformRole', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('49705f3b-e4e3-49e9-b8e2-c20e8bfaef5e', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'PlatformRole', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('49da64d8-d324-49be-aaa9-e1f2906ceb78', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:mydemand', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4ab46cae-bbac-4740-b0fc-a8029ba7b8ba', 'ac1f3abc-a552-4212-8898-8cb207343706', 'DemandPoolFTechnology', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4acb4cd8-ef76-457b-99c8-653ef8becef3', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'DemandPoolPlanedPool', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4b8e0d1b-6ae4-484f-9438-357a1db0233c', '4', 'req:demand:mydemand', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4caccacb-ecc8-4b18-9085-3d8f70d38a58', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', '1', 'func', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4cd3b423-150d-436a-a6f2-2d04237b2b96', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:activate', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4d4ff20d-b7f5-4b6d-a6c7-4508f4bcaf11', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'DemandPoolCluePool', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('4ea4925e-1db8-43f8-8533-b34dbd3dded9', '4', 'req:demand:delete', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('506d03f0-8914-4bff-8c59-000b99d14ec5', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'process:product:detail', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('50dd199a-52ec-4439-a746-067ab4abd376', '051456d9-eecb-43a9-afaa-c770d1228224', 'DemandPoolFTechnology', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('50f5ca18-0e3b-4b05-a06c-1e7705bc8723', '4', '3', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('520987ad-4832-420f-8a77-4e9c144a8c18', '1', 'req:demand:dashboard', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('523c20f2-7c04-47a1-8ed2-cf3e6a4150c7', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:permission:update', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('526d3868-dc4a-4e75-b067-552bb8b4c6c6', 'ac1f3abc-a552-4212-8898-8cb207343706', 'Platform', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('52c81c27-18a0-41d9-96f3-8abe6b8914c8', '1', '3', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('53a0781a-b24f-415d-8d77-34fdde70b1d6', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:planedpool', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('53c59a9e-6ef7-4865-8a96-cbbafe2f9c1b', '3', 'req:demand:page', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('540cbd83-35b8-4a42-a3f3-c9955e3fff73', '4', 'req:demand:create', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('556f83da-87a5-4d6d-a776-3f7cb8924bcf', '76d6e68d-6fc7-4d02-b006-5a1f9ec7789d', 'WorkbenchOverView', 'menu', '2022-09-13 15:37:32', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5584a29a-a266-414a-9e7f-9541de89eead', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'Log', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('57083f13-1bfb-4c13-8f7b-83fe8eb24fbd', '4', 'req:demand:demandpool', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('570d4579-b15d-4223-bcc2-c28d4f7b363e', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'Platform', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5735359c-b710-4994-b645-1ef2146f907f', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'Platform', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5773d30e-52cb-4bd6-97ed-f29cc81f787d', 'abc7e746-48e3-435c-a3ad-68e6be189b31', '1', 'func', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('582a105c-378a-4a37-b270-ebbbe47f2a7f', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:techsupmanage', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('58566e93-35a8-4834-8b82-2b4425fd1d25', '4', 'require:comment:delete', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('587cb123-c564-4060-91db-c808999a0d43', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:permission:update', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('589cfa10-c987-4879-8d6f-8661529aabe3', '1', 'req:demand:page', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('590507bb-4739-4c07-8a14-297fe5f2cb82', '2', 'req:demand:techsupmanage', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('595b97d3-cb7e-498b-99a8-80d7a7b65fcb', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'ProductProduct', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('597e47f1-ef0d-4685-85d5-1fa5833b36f6', '051456d9-eecb-43a9-afaa-c770d1228224', 'Product', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('59d41118-b0d3-4685-a15b-de8da3480172', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'Demand', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5aca2b2a-ed0c-4602-8cb6-ca1aa12e2b91', '2', 'req:demand:detail', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5af76760-c74a-4ef7-a3d1-2775853eeaf8', '520dc577-b87d-4f2e-8470-427ed7e11d84', '1', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5cebc584-9c75-44ee-8f95-55131c894e5a', '1', 'DemandPoolFDemand', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5d41b90a-56de-4039-a161-b36107593dff', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:create', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5db4eb08-1539-4549-9d55-35924cd6bde9', '1', 'require:comment:create', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5dda6b56-c1c0-47e7-92f9-a703e52b0856', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'DemandPoolFTechnology', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5e0f440e-a732-4568-a7d8-4e890d1e6431', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'DemandPool', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5e4d3af6-3db7-4361-88cd-425f9b0df9dc', '051456d9-eecb-43a9-afaa-c770d1228224', 'PlatformRole', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5f2fe908-2e75-4148-ab79-4a817d54fc29', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:finish', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('5fe5e61e-a0c9-4395-85fc-2459262fcf4b', 'ac1f3abc-a552-4212-8898-8cb207343706', '4', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6141cc28-4ed4-476d-b529-95d85ea2a2b5', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'ProductRequirement', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('633ee9fe-45fa-4960-8370-cb2f34bed819', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'req:demand:create', 'func', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('63e4613d-3808-4861-b434-4a88f5c3b03b', '2', 'DemandPoolCluePool', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('641f3ef5-e431-4f4c-b623-e1a548a1138a', '3', 'req:demand:finish', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('65094764-acea-48d9-a79c-77a2d55b1698', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:revoke', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('666e302d-bc27-4ec7-a577-2b02052cb2e3', '2', 'req:demand:backloglist', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('67d287bd-cb06-4a00-bcdf-09a449f33df8', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'DemandPoolDemandPool', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('67d8f64f-4555-4e57-95e8-cae5d820fc1a', '2', '3', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('68181912-c3cc-43b7-8b42-af46fe145ba2', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:backloglist', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6826587a-d26f-4a3d-b96f-937777a68eb6', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:cluepool', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('688a88fb-65d2-4aa8-ac80-42f13f050b7d', 'ac1f3abc-a552-4212-8898-8cb207343706', 'DemandPoolDemandPool', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('68ed316d-62ac-4bb9-8533-94e2cc1b2c81', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'ProductRequirement', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6a31d0b6-9240-4e2c-af88-87666499a27c', '2', 'req:demand:circulation', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6a321e7e-af00-43b9-a10e-2889550607c2', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'Log', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6a9a7ebd-7993-469b-a38b-6024b5c6bcc0', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'WorkbenchOverView', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6b537344-fd16-445c-b1ac-7713f35e3334', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'DemandPoolCluePool', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6b96b4f6-9a4e-43bd-ac5a-d589d01c50a0', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:mydemand', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16b83-3332-11ed-b726-0242c0a8fe0c', '0', 'WorkbenchOverView', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16ded-3332-11ed-b726-0242c0a8fe0c', '0', 'Demand', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16e61-3332-11ed-b726-0242c0a8fe0c', '0', 'Technical', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16eab-3332-11ed-b726-0242c0a8fe0c', '0', 'Product', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16eff-3332-11ed-b726-0242c0a8fe0c', '0', 'ProductRequirement', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16f46-3332-11ed-b726-0242c0a8fe0c', '0', 'ProductProduct', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd16fc4-3332-11ed-b726-0242c0a8fe0c', '0', 'DemandPool', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd1700b-3332-11ed-b726-0242c0a8fe0c', '0', 'DemandPoolDemandPool', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd17056-3332-11ed-b726-0242c0a8fe0c', '0', 'DemandPoolCluePool', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd1709b-3332-11ed-b726-0242c0a8fe0c', '0', 'DemandPoolPlanedPool', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd170dc-3332-11ed-b726-0242c0a8fe0c', '0', 'DemandPoolFTechnology', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd17123-3332-11ed-b726-0242c0a8fe0c', '0', 'DemandPoolFDemand', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd171a5-3332-11ed-b726-0242c0a8fe0c', '0', 'Platform', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd17267-3332-11ed-b726-0242c0a8fe0c', '0', 'PlatformUser', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd172ab-3332-11ed-b726-0242c0a8fe0c', '0', 'PlatformRole', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6bd172ea-3332-11ed-b726-0242c0a8fe0c', '0', 'Log', 'menu', '2022-09-13 15:05:16', NULL, '2022-09-13 15:05:16', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6cd084b4-eafc-45f5-81fa-30101f8bfe75', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'Product', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6d9a1f78-67b7-4c35-9445-8473589333a6', '2', 'DemandPoolDemandPool', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6eb91028-630f-494c-a625-e3f86d4ec5b3', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'Technical', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('6fef85d4-e531-49e4-a704-7ff2fcc06075', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'DemandPoolFTechnology', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('70024418-2090-447b-95e5-e969329f613b', '3', 'DemandPoolFDemand', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('701af794-cf89-4d1a-ae25-9b0d0b36891e', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:update', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('740a551c-1d10-458a-bc5b-8e4ca1de49e7', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:projetmanage', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('773a4f03-4290-44ee-ba85-2c01360426b3', '3', 'require:comment:detail', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('78428740-d0ff-43e0-b0e0-74c070cc1c68', '2', 'Demand', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('78c99952-c7da-4b17-a91a-b7106c2a24dd', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:projetmanage', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('7a638f69-9756-4a98-8684-f99f84ff0b94', '4', 'req:demand:fixedpool', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('7b3a30e7-daee-4e1f-8db5-6a8a7362b49b', '1', 'req:demand:backloglist', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('7c1e1f67-d191-46f5-98e1-e7cc8aada5b8', '4', 'system:user:get', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('7ee35dc2-e352-422d-b1fd-f38ece2400eb', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:reject', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('7f979795-435c-463f-9471-457ecdad269e', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:techfixedlist', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('80069ffe-8cbe-4206-b73a-21842e662bf5', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:review', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('81934f8f-3002-4e9e-9bbf-988f1b6c3dfe', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'PlatformRole', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('81b4abfa-bcae-4f88-8084-aa5f7b28e987', '4', 'system:user:disableUser', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8204d34c-a186-4652-a820-33b8e95f8862', '4', 'system', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('822cb124-1e5d-43cf-bec5-a7a480021817', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:detail', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('82da01b2-af9e-4e88-a6f2-6085028e7859', 'ac1f3abc-a552-4212-8898-8cb207343706', 'Product', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('83acf23a-33f9-11ed-b726-0242c0a8fe0c', '0', '7', 'func', '2022-09-14 14:50:26', NULL, '2022-09-14 14:50:26', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('83acf55c-33f9-11ed-b726-0242c0a8fe0c', '0', 'system:log:operation:page', 'func', '2022-09-14 14:50:26', NULL, '2022-09-14 14:50:26', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('83cbf64d-8897-4581-b9d3-5203b6a97a8a', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:finish', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('84a3f004-eb4f-4c71-8094-d1d50431f374', '4', 'system:user:enableUser', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8561bc3b-8571-4225-9e7e-55948c1a2e34', '3', 'require:comment:create', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8639792f-38fa-4404-ae75-2703f283d9bc', '3', 'req:demand:cluepool', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('87c5956f-97c8-4155-aa12-f2a59d5989a7', '4', 'req:demand:planedpool', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('884b3ffb-dcc6-46b2-bb14-3610b79953ba', '2', 'DemandPoolPlanedPool', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('884bcf16-53b6-4cf3-8d51-f3dfb4bf25ad', '1', 'DemandPoolFTechnology', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('89702953-e644-4e15-b028-3246ae8bac9d', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'Platform', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('89bd20f0-e0d2-4d8e-a24c-88cbbd99c548', '051456d9-eecb-43a9-afaa-c770d1228224', 'DemandPoolFDemand', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('89ea7173-f002-49be-abf0-2e53e5999afe', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:clone', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8a713dbb-3a68-4716-9402-1fddd58b91d1', '3', 'req:demand:demandpool', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8ac9b204-5fff-4481-88f8-c1b972fa25df', '3', '3', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b5f3f52-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', '1', 'func', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b5f417a-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'req:demand:create', 'func', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b5f41e9-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'WorkbenchOverView', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b60366c-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'Demand', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b6036fb-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'Technical', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b60374d-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'Product', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b60379d-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'ProductRequirement', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b6037f1-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'ProductProduct', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603843-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'DemandPool', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603890-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'DemandPoolDemandPool', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b6038d7-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'DemandPoolCluePool', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603969-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'DemandPoolPlanedPool', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b6039b9-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'DemandPoolFTechnology', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b6039ff-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'DemandPoolFDemand', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603a61-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'Platform', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603ab0-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'PlatformUser', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603b05-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'PlatformRole', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8b603b52-3335-11ed-b726-0242c0a8fe0c', '00009906-02e0-4257-bc53-d5180308c3e2', 'Log', 'menu', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', '2022-09-13 15:27:38', '95f86d44-32c0-4357-b1ef-1ed7f75a9c83', 1);
+    INSERT INTO `sys_role_permission` VALUES ('8e0c056d-b035-4faf-ac16-c1819d1ec510', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:review', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8e91f880-de83-4d30-9d28-040f4059c244', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'DemandPoolFTechnology', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8e9b5a53-407c-4fde-a2c1-d2f14db4865a', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'PlatformUser', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('8f258517-40d2-47c8-a806-4c0ef6a3ef73', '3', 'req:demand:cluepooldelete', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('90979bf5-95a9-4847-95fc-9a5e71d8a635', '4', 'PlatformUser', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('924e9617-3d5a-42fc-a9cd-a4813cfbb6d1', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'WorkbenchOverView', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('92c7a8b5-571a-4331-a380-d07400c25389', 'ac1f3abc-a552-4212-8898-8cb207343706', 'DemandPoolFDemand', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('93fd5856-9007-4d72-84b2-054504b753d7', '1', 'DemandPoolPlanedPool', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9505667d-def8-46d2-a92c-ceb9315290a9', '4', 'require:comment:page', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('96705988-f4ef-4a6e-a35b-2af67f52a296', '520dc577-b87d-4f2e-8470-427ed7e11d84', '6', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('967e3477-b6af-410a-bd27-6153c3b25b8c', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:page', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('96d70242-a409-4654-a207-be236b4ad7b7', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'req:demand:create', 'func', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('97e8f494-075a-4fdb-a78c-fc90bac2f15e', '1', 'DemandPoolCluePool', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('98ca31d0-79a9-41ff-b8e9-3b0ff2764974', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'DemandPoolDemandPool', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9ac39477-6140-4ac9-8ac0-334661b3bbd0', '4', 'system:user:resetPwd', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9acacd40-ed5e-4e3d-a8d3-9a9ce96d9162', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'process:product:delete', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9b52608d-313e-4886-8da3-6c96ce7e083c', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:demandpool', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9bb8a709-97d1-46fb-8d8a-831d971c23b1', '3', 'req:demand:detail', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9d450a38-fedb-4075-ae0b-def9504b3277', '2', 'req:demand:delete', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9d50bd0e-68a6-41b4-88bd-6b87b0c01c06', '3', 'DemandPoolCluePool', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('9d5eb84b-d459-4818-b689-e8af228a7ce2', '4', 'DemandPoolDemandPool', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a0991070-8cd3-4fce-9f9b-c3a8c93c24f7', '3', 'DemandPoolDemandPool', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a0def5e6-03af-4966-a65f-d870a34d6293', '2', 'req:demand:dashboard', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a12029ba-77c7-4455-a006-20cecd18506d', '4', 'DemandPoolPlanedPool', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a2490de9-1c14-4c4f-8499-4b256a9ecd81', '3', 'req:demand:fixedpool', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a529e213-9b88-4394-8def-766ce5af4c74', '3', 'req:demand:delete', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a5bf7b77-3811-464f-9cbd-e9ebfc120315', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:delete', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a769ff04-b166-426a-b6c6-7f0bd3ee519b', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:techsupmanage', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a7c8331b-1ba3-4feb-b0b6-f68102507f11', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'PlatformRole', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a8581b72-2a11-4b60-8433-bc1ee9565d60', 'ac1f3abc-a552-4212-8898-8cb207343706', '3', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a85ba61c-fb45-41c3-b252-4047dc19a408', '3', 'req:demand:techsupfixedpool', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('a9f33bc3-8698-4866-8f24-c44d9b376819', '4', 'system:user', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('aace785c-67d5-4601-bef4-00b4fc25895b', '1', 'WorkbenchOverView', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('aae12ca5-2f33-43d0-87ec-d2fbcbe00592', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:detail', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('aafabeab-31e5-4615-84b3-fdfeed848256', '051456d9-eecb-43a9-afaa-c770d1228224', 'Log', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('abfbab12-bf0d-460f-8dc1-a0a3f2f6b13a', '3', 'req:demand:projectfixedlist', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ac52fa64-cc36-44b5-8c28-6208a24d48e5', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:delete', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ae4c0e3e-1ef2-4b04-9998-a62411dc206c', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:planedpool', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('afa77319-e0a0-41e4-b3c0-8de2b0352c67', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:fixedpool', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b01051b8-339b-4a6e-a071-87a7236488d5', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'DemandPoolDemandPool', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b0999c2c-0c77-4bd9-a5ae-4f714088420c', '1', '5', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b12883b9-2b06-439c-b1f6-45372d2dcd3e', '4', 'WorkbenchOverView', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b2add527-fff0-452e-a82a-f0fc16ba4a29', '3', 'WorkbenchOverView', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b385e1ed-1ac4-43a2-9ec8-b0487231031d', '4', 'req:demand:update', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b46dd484-a977-4b0e-89f1-0b38ff27e92f', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:delete', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b49f9183-3cf9-4016-ba72-490602d22b31', '2', 'req:demand:techsupfixedpool', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b5198961-ec76-4d33-8dd0-d543b4ed7925', '3', '2', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b6082e8f-e502-462f-b8d6-7607b44d5a87', '4', 'DemandPoolFDemand', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b661c00d-2e35-44b9-837e-602af7cf921e', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'ProductRequirement', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b963e8a7-7a98-47ae-ae36-6eac50cfa265', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:update', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b9867bdf-33f3-49cd-b735-838a629dcf96', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:revoke', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('b9ab3686-2662-4977-8944-ce5c110a7e75', '2', 'req:demand:page', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ba3b49ad-849f-464e-996b-ccc7bbcb8dfe', 'ac1f3abc-a552-4212-8898-8cb207343706', '1', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('baaa7c76-13c9-4d70-ab60-eb062d74eff9', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'DemandPoolFDemand', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('bb176176-b9f9-4a25-91ad-64c6c8d942d9', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:dashboard', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('bc4ed2d5-b041-491d-b2aa-19dae7bacc5e', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'DemandPoolFTechnology', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('bdcd8d17-044f-4b55-bf19-440df2cbe242', '1', 'Demand', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('bf0a8dec-b738-4d94-861e-c046d57c89ff', '4', 'DemandPoolCluePool', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('bfbdd72c-24a4-44ec-a992-b51ad48567b4', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:techsupfixedpool', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c03c2d83-bdc9-434c-abe0-ffbc2bba3d49', '3', '5', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c0831aba-baa8-4d07-a282-f3b74f93f3aa', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:cluepool', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c1db5e04-60bc-4c30-b851-a05dd3a45cac', '1', 'req:demand:fixedpool', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c3972e24-33e6-49a9-af9b-b47ec2f8278c', '1', 'DemandPoolDemandPool', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c5230ea8-d04c-4752-8efd-ceed1907dd75', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'Technical', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c533fe12-330d-11ed-b726-0242c0a8fe0c', '0', '1', 'func', '2022-09-13 10:42:55', NULL, '2022-09-13 10:42:55', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c5340301-330d-11ed-b726-0242c0a8fe0c', '0', 'req:demand:create', 'func', '2022-09-13 10:42:55', NULL, '2022-09-13 10:42:55', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c545bc27-4722-45d0-a58c-76f3f83f10ac', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'DemandPool', 'menu', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c5947352-b27d-4efd-af02-40fd778135cc', '051456d9-eecb-43a9-afaa-c770d1228224', 'Technical', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc93fc-33cd-11ed-b726-0242c0a8fe0c', '0', '6', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc9689-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc970b-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:permission', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc9769-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:permission:update', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc97b6-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:create', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc97ff-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:page', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc9845-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:detail', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc9888-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:update', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc98ce-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:clone', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c7cc9911-33cd-11ed-b726-0242c0a8fe0c', '0', 'system:role:delete', 'func', '2022-09-14 09:37:23', NULL, '2022-09-14 09:37:23', NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('c9f989a9-90b8-48ee-b071-2fb4b5431e4d', '4', 'DemandPoolFTechnology', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ca87e153-2b2e-42a8-9060-319bc6860a56', '4', 'system:user:update', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cb070b9e-0ada-41e5-84a5-36ca9d50f8ed', '2', 'req:demand:update', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cb6d1573-8b20-41a4-b492-2ce37ba3871d', '3', 'DemandPoolFTechnology', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cbc0f6a0-c8c8-4120-a029-b752d60dc8d1', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'Technical', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cbc3d3c4-e971-40a9-b92c-b1d04dcb0f63', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:delete', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cbe84a63-3ee9-4138-b32a-27f7e1209574', '051456d9-eecb-43a9-afaa-c770d1228224', 'DemandPool', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cc641e60-a30a-4777-ae14-14ebde22f7fd', '1', 'req:demand:delete', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ccdb4f0a-c6a5-4f0a-bcd7-89f666580c06', '3', 'Demand', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ce1c7b2f-278e-4e93-98b1-ec5ec8263e20', '2', 'WorkbenchOverView', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ce5bfcea-78e6-4c1b-8aa0-24d7ac86adc3', '4', 'Log', 'menu', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ce6b7826-c7a6-4f9a-a031-440609c2e348', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:detail', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('cec5b933-95fd-4610-a51b-97e915deaba5', '051456d9-eecb-43a9-afaa-c770d1228224', 'Demand', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d16db5d0-609e-4d28-8b1b-1ff454fed36d', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'process:product:page', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d17e4fbd-005f-4c49-a3ed-d278e3e33041', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'Technical', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d1df8521-060b-44c9-bdc8-a9c4ceaf548e', '3', 'require:product:delete', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d2eca938-223f-4657-86bf-c55a200887c1', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:demandpool', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d2f629c6-dd72-49da-889b-15a58458ee87', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'Demand', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d4103b40-94ea-42e0-bba5-abaa60133ad4', 'ac1f3abc-a552-4212-8898-8cb207343706', 'Technical', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d42956ef-1729-4341-994f-c381c2632b7d', '2', 'DemandPoolFTechnology', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d440dadd-3602-488d-b044-a99d91907582', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'DemandPoolPlanedPool', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d84450f8-9c95-436a-8c3a-3571a4c99750', '4', 'require:comment:detail', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('d8c1e845-cef0-4556-896c-55c02681bab6', '051456d9-eecb-43a9-afaa-c770d1228224', 'DemandPoolCluePool', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('da73ec22-32db-4afe-86aa-51a036afce99', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'DemandPool', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('db58e5be-3bff-440c-b3cc-92e4ad4f50fd', '520dc577-b87d-4f2e-8470-427ed7e11d84', '5', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('dbf572ad-92ec-4d3d-a54a-4b7550c05848', '4', 'req:demand:techsupfixedpool', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('dc339ed9-470c-4c52-9d7b-ef4eb68d6388', '76d6e68d-6fc7-4d02-b006-5a1f9ec7789d', 'Demand', 'menu', '2022-09-13 15:37:32', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('dd016247-c628-42ff-811f-0d1824f36ec1', '4', 'req:demand:detail', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('dd89bada-ba75-4689-a544-6b62168fd86d', '1', 'req:demand:techsupfixedpool', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('dd8fc747-6100-4fd0-b069-920891a3a7f0', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'WorkbenchOverView', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('de0360da-d888-4f75-8f8d-39ba3a5c4b2e', '3', 'req:demand:mydemand', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('de2a471b-68e4-4a5b-bfa7-84ca67a86680', '3', 'require:comment:delete', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('de9e34a4-f887-40da-8ed6-e0307ab3f7f9', '520dc577-b87d-4f2e-8470-427ed7e11d84', '2', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('debdc43a-23fc-42b0-999d-09ebf5250d65', '3', 'DemandPoolPlanedPool', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('df262a6e-8514-42e2-bcf9-7613b348057f', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:techfixedlist', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e0f66e5c-2049-40ac-92c9-38831275dd4f', '051456d9-eecb-43a9-afaa-c770d1228224', 'req:demand:create', 'func', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e229a5e1-c8a4-4ff5-970d-bd2729277428', '4', 'system:user:create', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e2da3179-d249-4544-b67f-a9806c30281f', '1', 'DemandPool', 'menu', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e4809710-cede-4969-99f9-876b99204ad0', '4', 'require:comment:create', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e48b10e9-1298-4c0a-a731-fc309904b060', '1', '1', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e58b28f0-3b88-4782-87ee-4143d6ad77cf', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:create', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e5d7b4c0-135f-465a-8bfd-2b172d05d0e8', '4', 'req:demand:backloglist', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e6a677f9-2a3f-4bd2-9c4e-3594bfd482a0', '3', 'req:demand:projetmanage', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e6e89e8a-3ddc-4d60-a18a-641a51bb57ae', '2', 'require:comment:create', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e6f7f942-5c2a-420c-b3cb-a145009d2c04', 'ac1f3abc-a552-4212-8898-8cb207343706', 'ProductProduct', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e76f0d70-9d18-4a71-8ab6-3ab9e7e8e5b3', '3', 'req:demand:create', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e7fcc602-32c1-4542-8193-8249a81e8c33', 'ac1f3abc-a552-4212-8898-8cb207343706', 'PlatformUser', 'menu', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e8501720-0414-4439-9045-425b3190c9bb', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e8a40d54-e441-4444-b3d5-34c0e59ba28f', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', 'ProductProduct', 'menu', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e923bc7f-1be3-4d7c-b274-90bea9664cde', '3', 'ProductRequirement', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('e99c1dd0-620c-46d9-87a0-28c83d9099a3', '3', 'req:demand:dashboard', 'func', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('eb0c6435-1cb4-4ebf-97ce-0a240e5e98ae', '1', 'req:demand:cluepool', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('eb744d73-c218-45f6-9a84-13883ec5ada6', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role:create', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('eb8a9dc1-8aa4-4c0c-b1e8-98c298354edb', 'ac1f3abc-a552-4212-8898-8cb207343706', '5', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ebd639b1-2620-4955-a22d-5ebcd99766e1', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:techsupfixedpool', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ec0e93b7-8ea5-4a57-b518-aa68bb2eed75', '1', 'req:demand:demandpool', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ed152273-a4fd-4d98-993d-262b9d4c2bf0', '2', 'req:demand:revoke', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ee255546-20de-4f44-945a-9c49fa7435bc', '2', 'require:comment:delete', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('eeb3d324-c010-4a9d-9d95-977d3c71ecb7', '3', 'DemandPool', 'menu', '2022-09-16 09:47:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ef03c76e-8a43-4303-9f5a-f35aa77a2cfe', 'fa1660e0-67fe-424a-a1ce-830afeafbae6', '1', 'func', '2022-09-13 15:04:05', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('ef61b5a3-7d88-4506-9927-21e10d5db439', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:activate', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f0e4444b-4c35-484f-acd3-df8bfcf98398', '2', 'Technical', 'menu', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f0ffc961-9347-43fb-a635-e628e756ced5', 'ac1f3abc-a552-4212-8898-8cb207343706', 'system:role:create', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f104796c-3611-4684-bff0-f4c52cc91333', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'DemandPool', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f1a2fda3-7a03-45e2-af32-04246a94c1c6', '1', 'req:demand:update', 'func', '2022-09-15 16:38:40', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f2b6c850-cbc7-4702-afcc-a5fa70f8023a', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'process:product:create', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f4534d26-3a23-498b-a203-770b698fa5ac', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'Platform', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f62e7d06-1863-43cd-96b5-075fb85f7959', 'ac1f3abc-a552-4212-8898-8cb207343706', '2', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f6e54995-8c45-409e-8145-a388d5aaf3e1', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'DemandPoolPlanedPool', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f7dc409b-4380-4551-9208-dfe005ea10cf', 'abc7e746-48e3-435c-a3ad-68e6be189b31', 'WorkbenchOverView', 'menu', '2022-09-13 15:24:43', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f891ee6f-c270-4c7d-b463-250971411154', '051456d9-eecb-43a9-afaa-c770d1228224', 'ProductProduct', 'menu', '2022-09-13 15:08:54', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('f9249650-303b-4555-b18d-0a60c069792c', '4', '1', 'func', '2022-09-15 16:38:08', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fa40adef-e317-438d-b932-23fb8da51258', '2', 'req:demand:techfixedlist', 'func', '2022-09-15 16:37:37', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fa62ac27-4203-4dc3-a1d5-57f394dbbd4e', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'system:role', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fc19ed2c-3a99-4e56-a460-5389274890f2', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:resolved', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fcc36f79-afc1-4d88-9908-295d01b449f3', 'ac1f3abc-a552-4212-8898-8cb207343706', 'req:demand:dashboard', 'func', '2022-09-14 09:39:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fd5d4c12-8727-4c3f-ab95-b9f98f53e305', 'e421ea48-cc67-48cd-85c2-d0eac34f90b4', 'Demand', 'menu', '2022-09-13 15:04:23', '00008ed4-0441-4373-8d6f-57188fb52bc1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fdbb35e8-e3b1-4e0f-919e-1385671e9ebb', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'req:demand:projectfixedlist', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+    INSERT INTO `sys_role_permission` VALUES ('fe51280d-aa3b-43a7-8a8e-be0316bfd547', '520dc577-b87d-4f2e-8470-427ed7e11d84', 'process:product:update', 'func', '2022-09-14 10:08:28', '0000f9ee-3ccc-4210-8839-54c676e3f7b1', NULL, NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_user
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_user`;
+    CREATE TABLE `sys_user`  (
+                                `uuid` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '用户UUID',
+                                `account` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '用户名',
+                                `password` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '密码',
+                                `name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '姓名',
+                                `number` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '工号',
+                                `phone` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '手机号',
+                                `email` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '邮箱',
+                                `description` varchar(150) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '描述',
+                                `user_group_uuid` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '所属用户组',
+                                `account_md5` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT '' COMMENT '用户名md5值',
+                                `status` tinyint(2) NULL DEFAULT 1 COMMENT '用户状态:1启用，0禁用',
+                                `first_login` tinyint(2) NULL DEFAULT 1 COMMENT '是否首次登陆：1是，0否',
+                                `update_password_time` datetime(0) NULL DEFAULT NULL COMMENT '用户最后修改密码时间',
+                                `last_login_time` datetime(0) NULL DEFAULT NULL COMMENT '最后登录时间',
+                                `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                `createpin` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                `updatepin` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_user
+    -- ----------------------------
+    INSERT INTO `sys_user` VALUES ('00008ed4-0441-4373-8d6f-57188fb52bc1', 'super', 'ZzJ7NH82', 'super', NULL, NULL, NULL, NULL, '-1', '1b3231655cebb7a1f783eddf27d254ca', 1, 0, '2022-03-21 09:26:04', '2022-03-21 09:26:04', '2022-03-21 09:26:04', NULL, '2022-04-15 11:03:42', NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_user_group
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_user_group`;
+    CREATE TABLE `sys_user_group`  (
+                                      `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '主键UUID',
+                                      `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户组名称',
+                                      `role_uuid` tinyint(1) NULL DEFAULT 1 COMMENT '角色uuid',
+                                      `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                      `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                      `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                      `updatepin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                      `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                      PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户组' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_user_group
+    -- ----------------------------
+    INSERT INTO `sys_user_group` VALUES ('1', '提交人', 1, '2022-09-07 15:42:55', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_user_group` VALUES ('2', '技服部门', 2, '2022-09-07 15:43:44', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_user_group` VALUES ('3', '产品部门', 3, '2022-09-07 15:43:46', NULL, NULL, NULL, 1);
+    INSERT INTO `sys_user_group` VALUES ('4', '管理员', 4, '2022-09-07 15:43:50', NULL, NULL, NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_user_role
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_user_role`;
+    CREATE TABLE `sys_user_role`  (
+                                      `uuid` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '主键UUID',
+                                      `user_uuid` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '用户UUID',
+                                      `role_uuid` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '角色UUID',
+                                      `resource_pool_uuid` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '资源池UUID',
+                                      `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                      `createpin` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                      `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                      `updatepin` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                      `yn` tinyint(2) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                      PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '用户角色' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_user_role
+    -- ----------------------------
+    INSERT INTO `sys_user_role` VALUES ('00008ed4-0441-4373-8d6f-57188fb52bc1', '00008ed4-0441-4373-8d6f-57188fb52bc1', '0', NULL, NULL, NULL, NULL, NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_mail
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_mail`;
+    CREATE TABLE `sys_mail`  (
+                                `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'uuid',
+                                `encrypt` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '加密方式',
+                                `host` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主机',
+                                `port` int(11) NULL DEFAULT NULL COMMENT '端口',
+                                `username` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
+                                `password` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
+                                `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                `updatepin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                `yn` tinyint(4) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_mail
+    -- ----------------------------
+    INSERT INTO `sys_mail` VALUES ('5575ef94-536a-4020-ae9a-1ab7334e5f54', 'SSL/TLS', 'smtp.exmail.qq.com', 465, 'gerrit@troila.com', 'aded129874YTf', NULL, NULL, NULL, NULL, 1);
+
+    -- ----------------------------
+    -- Table structure for sys_field
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_field`;
+    CREATE TABLE `sys_field`  (
+                                  `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'uuid',
+                                  `user_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户uuid',
+                                  `show_fields` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户显示字段',
+                                  `hidden_fields` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户不显示字段',
+                                  `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属列表 需求表',
+                                  `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                  `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                  `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                  `updatepin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                  `yn` tinyint(2) NULL DEFAULT 1 COMMENT '删除状态：1正常，0删除',
+                                  PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户自定义列表表' ROW_FORMAT = Dynamic;
+
+    DROP TABLE IF EXISTS `sys_version`;
+    CREATE TABLE `sys_version` (
+                                  `uuid` varchar(50) NOT NULL COMMENT '版本UUID',
+                                  `name` varchar(36) DEFAULT NULL COMMENT '版本名称',
+                                  `type` tinyint(2) DEFAULT NULL COMMENT '版本类型：1-产品版本 2.....',
+                                  `default_flag` tinyint(2) DEFAULT NULL COMMENT '当前版本：0-否 1-是',
+                                  `createtime` datetime DEFAULT NULL COMMENT '创建时间',
+                                  `createpin` varchar(100) DEFAULT NULL COMMENT '创建人',
+                                  `updatetime` datetime DEFAULT NULL COMMENT '修改时间',
+                                  `updatepin` varchar(255) DEFAULT NULL COMMENT '修改人',
+                                  `yn` tinyint(2) DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                  PRIMARY KEY (`uuid`)
+    ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT='版本表';
+    INSERT INTO `klcloud_prmp`.`sys_version`(`uuid`, `name`, `type`, `default_flag`, `createtime`, `createpin`, `updatetime`, `updatepin`, `yn`) VALUES ('1', 'v1.1.0', 1, 1, NULL, NULL, NULL, NULL, 1);
+    -- ----------------------------
+    -- Table structure for sys_field
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_field`;
+    CREATE TABLE `sys_field`  (
+                                  `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'uuid',
+                                  `user_uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '用户uuid',
+                                  `show_fields` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户显示字段',
+                                  `hidden_fields` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户不显示字段',
+                                  `type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所属列表 需求表',
+                                  `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                  `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                  `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                  `updatepin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                  `yn` tinyint(2) NULL DEFAULT 1 COMMENT '删除状态：1正常，0删除',
+                                  PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户自定义列表表' ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Table structure for sys_mail
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_mail`;
+    CREATE TABLE `sys_mail`  (
+                                `uuid` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'uuid',
+                                `encrypt` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '加密方式',
+                                `host` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '主机',
+                                `port` int(11) NULL DEFAULT NULL COMMENT '端口',
+                                `username` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '用户名',
+                                `password` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '密码',
+                                `createtime` datetime(0) NULL DEFAULT NULL COMMENT '创建时间',
+                                `createpin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '创建人',
+                                `updatetime` datetime(0) NULL DEFAULT NULL COMMENT '修改时间',
+                                `updatepin` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '修改人',
+                                `yn` tinyint(4) NULL DEFAULT NULL COMMENT '删除状态：1正常，0删除',
+                                PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+    -- ----------------------------
+    -- Records of sys_mail
+    -- ----------------------------
+    INSERT INTO `sys_mail` VALUES ('5575ef94-536a-4020-ae9a-1ab7334e5f54', 'SSL/TLS', 'smtp.exmail.qq.com', 465, 'gerrit@troila.com', 'aded129874YTf', NULL, NULL, NULL, NULL, 1);
+
+
+    alter table req_demand add grade varchar(50) DEFAULT NULL COMMENT '需求等级：base:基本型、expect:期望型、charm:魅力型';
+    alter table req_demand add activate_cause varchar(500) DEFAULT NULL COMMENT '激活原因';
+    alter table req_demand add clue_cause varchar(50) DEFAULT NULL COMMENT '转线索池原因:unrecurrent:无法还原具体场景、nonVerify:无具体项目验证、nonWorth:需求价值较低、techHard:技术实现限制较大';
+    alter table req_demand add pro_affect_scope text DEFAULT NULL COMMENT '直接、间接影响用户范围';
+    alter table req_demand add pro_issue text DEFAULT NULL COMMENT '待解决的问题是什么';
+    alter table req_demand add pro_root_cause text DEFAULT NULL COMMENT '问题根本原因分析';
+    alter table req_demand add pro_suggest_solution text DEFAULT NULL COMMENT '我们建议的解法';
+    alter table req_demand add pro_acceptance_standard text DEFAULT NULL COMMENT '验收指标描述';
+    alter table req_demand add client_name varchar(500) DEFAULT NULL COMMENT '客户名称';
+    alter table req_demand add client_position varchar(50) DEFAULT NULL COMMENT '客户职位';
+    alter table req_demand add expect_time datetime DEFAULT NULL COMMENT '期望反馈时间';
+    alter table req_demand add project_stage varchar(50) DEFAULT NULL COMMENT '项目阶段';
+    alter table req_demand add project_scale varchar(50) DEFAULT NULL COMMENT '项目规模';
+    alter table req_demand add lastes_description text DEFAULT NULL COMMENT '最近一次问题场景描述';
+    alter table req_demand add frequency text DEFAULT NULL COMMENT '目前问题多久发生';
+    alter table req_demand add present_solution text DEFAULT NULL COMMENT '目前如何解决';
+    alter table req_demand add present_solution_cost text DEFAULT NULL COMMENT '目前解决方案代价';
+    alter table req_demand add acceptance_standard text DEFAULT NULL COMMENT '新解法的验收标准';
+    alter table req_demand add client_solution text DEFAULT NULL COMMENT '客户建议的解决方案';
+    alter table req_demand add local_solution text DEFAULT NULL COMMENT '我方建议的解决方案';
+    alter table req_demand add desktop_type varchar(50) DEFAULT NULL COMMENT '桌面类型:VOI:VOI、VDI:VDI、MIX:融合版';
+    alter table req_demand add followers varchar(50) DEFAULT NULL COMMENT '桌面类型:VOI:VOI、VDI:VDI、MIX:融合版';
+    ALTER TABLE req_demand CHANGE version plan_version  VARCHAR(50);
+
+    -- ----------------------------
+    -- 更新字典表
+    -- ----------------------------
+    DROP TABLE IF EXISTS `sys_dict`;
+    CREATE TABLE `sys_dict` (
+                                `uuid` varchar(50) NOT NULL COMMENT 'UUID',
+                                `type` varchar(20) DEFAULT NULL COMMENT '字典类型',
+                                `value` varchar(50) DEFAULT NULL COMMENT '字典名称',
+                                `code` varchar(50) DEFAULT NULL COMMENT '英文值',
+                                `sort` int(20) DEFAULT NULL COMMENT '排序',
+                                `description` varchar(150) DEFAULT NULL COMMENT '描述',
+                                `createtime` datetime DEFAULT NULL COMMENT '创建时间',
+                                `createpin` varchar(50) DEFAULT NULL COMMENT '创建人',
+                                `updatetime` datetime DEFAULT NULL COMMENT '修改时间',
+                                `updatepin` varchar(50) DEFAULT NULL COMMENT '修改人',
+                                `yn` tinyint(2) DEFAULT 1 COMMENT '删除状态：1正常，0删除',
+                                PRIMARY KEY (`uuid`) USING BTREE
+    ) ENGINE=InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT=DYNAMIC COMMENT='字典表';
+
+    -- ----------------------------
+    -- Records of sys_dict
+    -- ----------------------------
+    INSERT INTO `sys_dict` VALUES ('1', 'requireType', '应用需求', 'business', 2, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('100', 'requireStatus', '技服未处理', 'techPreHandle', 200, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('101', 'requireStatus', '技服已处理', 'techHandle', 201, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('102', 'requireStatus', '已完成', 'fixed', 202, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('104', 'requireStatus', '待规划', 'prePlan', 204, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('105', 'requireStatus', '已排期', 'planed', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('106', 'requireStatus', '需求分析中', 'analysis', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('107', 'requireStatus', '预研立项中', 'approval', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('108', 'requireStatus', '产品设计中', 'design', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('109', 'requireStatus', '产品评审中', 'audit', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('110', 'requireStatus', '已回退', 'back', 205, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('12', 'requireOrigin', '客户需求', 'customerRequire', 21, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('13', 'requireOrigin', '市场调研', 'marketSurvey', 22, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('14', 'requireOrigin', '技术需求', 'technicalRequire', 23, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('15', 'requireOrigin', '内部需求', 'internalRequire', 24, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('2', 'requireType', '系统需求', 'system', 2, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('21', 'projectOrigin', '教育', 'education', 100, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('22', 'projectOrigin', '医疗', 'medical', 101, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('23', 'projectOrigin', '公安', 'police', 102, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('25', 'projectOrigin', '公检法', 'minor', 103, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('26', 'projectOrigin', '运营商', 'operator', 104, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('27', 'projectOrigin', '企业', 'company', 105, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('28', 'projectOrigin', '制造业', 'manufacturing', 106, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('29', 'projectOrigin', '金融', 'financial', 107, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('3', 'requireType', '技术支持', 'techSupport', 2, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('30', 'projectOrigin', '银行', 'bank', 108, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('300', 'clueCause', '无法还原具体场景', 'unrecurrent', 330, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('301', 'clueCause', '无具体项目验证', 'nonVerify', 331, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('302', 'clueCause', '需求价值较低', 'nonWorth', 332, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('303', 'clueCause', '技术实现限制较大', 'techHard', 333, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('31', 'projectOrigin', '电商', 'electricity', 109, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('34', 'projectOrigin', '政府', 'techHandle', 110, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('400', 'requireGrade', '基本型', 'base', 330, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('401', 'requireGrade', '期望型', 'expect', 331, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('402', 'requireGrade', '魅力型', 'charm', 332, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('500', 'desktopType', 'VDI', 'VDI', 330, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('501', 'desktopType', 'VOI', 'VOI', 331, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('502', 'desktopType', '融合版', 'MIX', 332, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('600', 'priority', '低', 'low', 600, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('601', 'priority', '中', 'normal', 601, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('602', 'priority', '高', 'high', 602, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('70', 'requireSolution', '不予解决', 'careless', 220, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('700', 'projectStage', '明确业务驱动', 'IdentifyBusinessDrivers', 700, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('701', 'projectStage', '确立需求', 'EstablishRequirements', 700, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('702', 'projectStage', '评估方案', 'EvaluationPlan', 700, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('703', 'projectStage', '制定规则', 'SetRules', 700, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('704', 'projectStage', '签订合同', 'SignContract', 700, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('705', 'projectStage', '实施交付', 'Deploy', 700, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('71', 'requireSolution', '延期处理', 'handleDelay', 221, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('72', 'requireSolution', '已解决', 'fixed', 222, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('73', 'requireSolution', '无法复现', 'unrecurrent', 223, NULL, NULL, NULL, NULL, NULL, 1);
+    INSERT INTO `sys_dict` VALUES ('74', 'requireSolution', '外部原因', 'externalCauses', 224, NULL, NULL, NULL, NULL, NULL, 1);
+
+    SET FOREIGN_KEY_CHECKS = 1;

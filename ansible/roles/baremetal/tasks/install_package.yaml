@@ -53,6 +53,22 @@
   when:
     - ansible_distribution == "Ubuntu"
 
+- name: clean yum cache
+  shell: yum clean all
+  retries: 12
+  delay: 5
+  when:
+    - ansible_distribution == "openEuler"
+
+- name: Update yum cache
+  shell: yum update -y
+  register: yum_result
+  until: yum_result.rc == 0
+  retries: 12
+  delay: 5
+  when:
+    - ansible_distribution == "openEuler"
+
 - name: 创建 /etc/kubernetes 目录
   file: 
     name: "/etc/kubernetes"
@@ -93,7 +109,6 @@
       - iptables
       - sg3-utils-udev
       - jq
-      - ipvsadm
       - ipmitool
       - ceph-fuse
   when:
@@ -112,7 +127,6 @@
       - rsync
       - iptables
       - jq
-      - ipvsadm
       - ipmitool
       - bash-completion
   when:
@@ -157,17 +171,11 @@
     mode: 0644
   register: configuration_result
 
-- name: 重新加载 daemon
-  systemd:
-    daemon_reload: yes
-
-- name: 启动/重启 Docker
-  service:
-    name: docker
-    state: restarted
-    enabled: yes
-  when: 
-  - configuration_result.changed
+- name: reload docker daemon
+  shell: "kill -SIGHUP $(pidof dockerd)"
+  args:
+    executable: /bin/bash
+  ignore_errors: true
   
 - name: 设置 Docker 开机自启
   service:

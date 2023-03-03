@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prmp-db-init
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: init
+          image: "{{ .Values.image.repository }}/kubernetes-entrypoint:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - kubernetes-entrypoint
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: PATH
+              value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/
+            - name: DEPENDENCY_SERVICE
+              value: "kunlun-mysql-svc"
+      containers:
+      - name: prmp-db-init
+        image: "{{ .Values.image.repository }}mysql:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+          - /bin/bash 
+          - -ec 
+          - |
+            mysql -uroot -p123456 -hkunlun-mysql-svc < /tmp/init.sql
+        volumeMounts:
+          - mountPath: /tmp/init.sql
+            name: config
+            subPath: init_sql
+      restartPolicy: OnFailure
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 420
+          name: kunlun-configmap
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      serviceAccount: {{ .Values.serviceAccountName }}

@@ -6,10 +6,6 @@
     debug: true
     password: "{{ harbor_local_password }}"
 
-- name: Find local chart
-  command: "ls {{ helm_charts_dir }}/local_charts"
-  register: dir_out
-
 - name: Add tag to harbor image
   community.docker.docker_image:
     name: "{{ kube_image_repository }}/{{ item }}:{{ harbor_local_chart_image_version }}"  
@@ -17,4 +13,21 @@
     force_tag: yes 
     push: true
     source: local
-  with_items: "{{ dir_out.stdout_lines }}"
+  with_items: 
+    - prmp-web-arm
+    - prmp-arm
+    - mysql
+    - redis
+    - kubernetes-entrypoint
+
+- name: Remove image
+  community.docker.docker_image:
+    state: absent
+    name: "{{ kube_image_repository }}/{{ item }}:{{ harbor_local_chart_image_version }}" 
+    tag: v1
+  with_items:
+    - prmp-web-arm
+    - prmp-arm
+    - mysql
+    - redis
+    - kubernetes-entrypoint

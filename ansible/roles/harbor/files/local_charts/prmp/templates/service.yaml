@@ -1,0 +1,85 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: yuanwei-prmp-svc
+  labels:
+    app: yuanwei-prmp-svc
+spec:
+  ports:
+    - name: http-0
+      protocol: TCP
+      port: 7010
+      targetPort: 7010
+      nodePort: 32555
+    - name: http-1
+      protocol: TCP
+      port: 9092
+      targetPort: 9092
+      nodePort: 31144
+  selector:
+    app: prmp
+  type: NodePort
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  internalTrafficPolicy: Cluster
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: prmp-web-svc
+  labels:
+    app: prmp-web-svc
+spec:
+  ports:
+    - name: http-0
+      protocol: TCP
+      port: 7000
+      targetPort: 7000
+      nodePort: 31214
+  selector:
+    app: prmp-web
+  type: NodePort
+  sessionAffinity: None
+  externalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  internalTrafficPolicy: Cluster
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.mysql_name }}
+spec:
+  ports:
+  - name: http-0
+    nodePort: 31102
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  selector:
+    app: mysql
+  sessionAffinity: None
+  type: NodePort
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.redis_name }}
+spec:
+  ports:
+  - name: http-0
+    nodePort: 31407
+    port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    app: redis
+  sessionAffinity: None
+  type: NodePort

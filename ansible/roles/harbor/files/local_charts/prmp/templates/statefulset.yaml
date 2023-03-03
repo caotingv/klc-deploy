@@ -1,0 +1,124 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: redis
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: redis
+    spec:
+      volumes:
+        - name: volume-0be7bf
+          persistentVolumeClaim:
+            claimName: kunlun-pvc
+      containers:
+        - name: container-9944a4
+          image: "{{ .Values.image.repository }}/redis:{{ .Values.image.tag }}"
+          ports:
+            - name: http-0
+              containerPort: 6379
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /data/conf/redis.conf
+              name: config
+              subPath: redis.conf
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+          - redis-server
+          args:
+          - /data/conf/redis.conf
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      serviceAccount: {{ .Values.serviceAccountName }}
+      securityContext: {}
+      schedulerName: default-scheduler
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 420
+          name: kunlun-configmap
+  serviceName: {{ .Values.service.mysql_name }}
+  podManagementPolicy: OrderedReady 
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  revisionHistoryLimit: 10
+  
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: mysql
+    spec:
+      volumes:
+        - name: volume-061b2a
+          persistentVolumeClaim:
+            claimName: kunlun-pvc
+      containers:
+        - name: mysql
+          image: "{{ .Values.image.repository }}/mysql:{{ .Values.image.tag }}"
+          ports:
+            - name: http-0
+              containerPort: 3306
+              protocol: TCP
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: '123456'
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          readinessProbe:
+            exec:
+              command:
+              - /bin/bash
+              - -ec
+              - |
+                mysql -uroot -p123456 -e"set GLOBAL max_connections =10000"
+                mysqladmin status -uroot -p123456
+            failureThreshold: 5
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 30
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      serviceAccount: {{ .Values.serviceAccountName }}
+      securityContext: {}
+      schedulerName: default-scheduler
+      
+  serviceName: {{ .Values.service.redis_name }}
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  revisionHistoryLimit: 10
