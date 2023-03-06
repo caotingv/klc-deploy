@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kunlun-configmap
+  namespace: {{ .Release.Namespace }}
 data:
   redis.conf: |
     protected-mode no

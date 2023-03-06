@@ -2,10 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prmp
-  labels:
-    app: prmp
-  annotations:
-    deployment.kubernetes.io/revision: '1'
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -13,11 +10,10 @@ spec:
       app: prmp
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: prmp
     spec:
-      serviceAccountName: default
-      securityContext: {}
       initContainers:
         - name: init
           image: "{{ .Values.image.repository }}/kubernetes-entrypoint:{{ .Values.image.tag }}"
@@ -56,32 +52,17 @@ spec:
             - name: ENV_PRMP_BIZ_SVC_REDIS
               value: {{ .Values.service.redis_name }}
           resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
       restartPolicy: Always
-      terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
       serviceAccountName: {{ .Values.serviceAccountName }}
       serviceAccount: {{ .Values.serviceAccountName }}
-      securityContext: {}
-      schedulerName: default-scheduler
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600
 
 ---
 kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: prmp-web
-  labels:
-    app: prmp-web
-  annotations:
-    deployment.kubernetes.io/revision: '1'
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -101,20 +82,8 @@ spec:
               containerPort: 7000
               protocol: TCP
           resources: {}
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
           imagePullPolicy: {{ .Values.image.pullPolicy }}
       restartPolicy: Always
-      terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
       serviceAccountName: {{ .Values.serviceAccountName }}
       serviceAccount: {{ .Values.serviceAccountName }}
-      securityContext: {}
-      schedulerName: default-scheduler
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 25%
-      maxSurge: 25%
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600

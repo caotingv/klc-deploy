@@ -2,8 +2,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: yuanwei-prmp-svc
-  labels:
-    app: yuanwei-prmp-svc
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
     - name: http-0
@@ -31,8 +30,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: prmp-web-svc
-  labels:
-    app: prmp-web-svc
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
     - name: http-0
@@ -55,6 +53,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.service.mysql_name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - name: http-0
@@ -72,6 +71,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.service.redis_name }}
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - name: http-0

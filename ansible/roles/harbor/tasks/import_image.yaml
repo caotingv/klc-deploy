@@ -20,14 +20,14 @@
     - redis
     - kubernetes-entrypoint
 
-- name: Remove image
-  community.docker.docker_image:
-    state: absent
-    name: "{{ kube_image_repository }}/{{ item }}:{{ harbor_local_chart_image_version }}" 
-    tag: v1
-  with_items:
-    - prmp-web-arm
-    - prmp-arm
-    - mysql
-    - redis
-    - kubernetes-entrypoint
+#- name: Remove image
+#  community.docker.docker_image:
+#    state: absent
+#    name: "{{ kube_image_repository }}/{{ item }}:{{ harbor_local_chart_image_version }}" 
+#    tag: v1
+#  with_items:
+#    - prmp-web-arm
+#    - prmp-arm
+#    - mysql
+#    - redis
+#    - kubernetes-entrypoint

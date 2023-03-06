@@ -2,6 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: prmp-db-init
+  namespace: {{ .Release.Namespace }}
 spec:
   template:
     spec:
@@ -28,7 +29,7 @@ spec:
               value: "kunlun-mysql-svc"
       containers:
       - name: prmp-db-init
-        image: "{{ .Values.image.repository }}mysql:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository }}/mysql:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
           - /bin/bash 
