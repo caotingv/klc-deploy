@@ -15,7 +15,11 @@ image:
   ks_kubectl_tag: {{ kube_image_tag }}
   nginx_ingress_controller_repo: {{ kube_image_repository }}/nginx-ingress-controller
   nginx_ingress_controller_tag: {{ kube_image_tag }}
+  {% if ansible_architecture == "aarch64" %}
   defaultbackend_repo: {{ kube_image_repository }}/defaultbackend-arm64
+  {% else %}
+  defaultbackend_repo: {{ kube_image_repository }}/defaultbackend-amd64
+  {% endif %}
   defaultbackend_tag: {{ kube_image_tag }}
   pullPolicy: {{ ks_image_pull_policy }}
 

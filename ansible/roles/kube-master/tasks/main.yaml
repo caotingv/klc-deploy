@@ -9,12 +9,12 @@
     path: "{{ kube_resolve_file }}"
   register: resolv_file
   when:
-    - ansible_distribution == "openEuler"
+    - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
 
 - name: create resolv.conf 文件
   shell: echo "nameserver 114.114.114.114" > /etc/resolv.conf
   when:
-    - ansible_distribution == "openEuler"
+    - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
     - not resolv_file.stat.exists
 
 - name: 拉取 master 节点需要拉取的镜像列表

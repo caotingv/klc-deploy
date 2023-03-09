@@ -64,7 +64,7 @@ update_global() {
 }
 
 update_repo() {
-    cp ${script_dir}/ansible/roles/baremetal/files/rpms/* /var/www/html/rpms/
+    cp ${script_dir}/ansible/roles/baremetal/files/arm64/rpms/* /var/www/html/rpms/
     yum install createrepo -y >/dev/null
     createrepo -d /var/www/html/rpms 
     yum clean all >/dev/null

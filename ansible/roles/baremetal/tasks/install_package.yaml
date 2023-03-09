@@ -1,26 +1,44 @@
 ---
-- name: Generate /etc/hosts for all of the nodes
-  blockinfile:
-    dest: /etc/hosts
-    marker: "# {mark} ANSIBLE GENERATED HOSTS"
-    block: |
-        {% for host in groups['baremetal'] %}
-        {% set api_interface = hostvars[host]['api_interface'] %}
-        {% if 'ansible_' + api_interface in hostvars[host] %}
-        {% set hostnames = [hostvars[host]['ansible_nodename'], hostvars[host]['ansible_hostname']] %}
-        {{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }} {{ hostnames | unique | join(' ') }}  {{ kubernetes_domain_name }}
-        {% if enable_docker_register_domain_deploy and host == groups['baremetal'][0] %}
-        {{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }} {{ hostnames | unique | join(' ') }}  {{ docker_register_domain }}
-        {% endif %}
-        {% endif %}
-        {% endfor %}
-  become: True
+# - name: Generate /etc/hosts for all of the nodes
+#   blockinfile:
+#     dest: /etc/hosts
+#     marker: "# {mark} ANSIBLE GENERATED HOSTS"
+#     block: |
+#         {% for host in groups['baremetal'] %}
+#         {% set api_interface = hostvars[host]['api_interface'] %}
+#         {% if 'ansible_' + api_interface in hostvars[host] %}
+#         {% set hostnames = [hostvars[host]['ansible_nodename'], hostvars[host]['ansible_hostname']] %}
+#         {{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }} {{ hostnames | unique | join(' ') }}  {{ kubernetes_domain_name }}
+#         {% if enable_docker_register_domain_deploy and host == groups['baremetal'][0] %}
+#         {{ hostvars[host]['ansible_' + api_interface]['ipv4']['address'] }} {{ hostnames | unique | join(' ') }}  {{ docker_register_domain }}
+#         {% endif %}
+#         {% endif %}
+#         {% endfor %}
+#   become: True
 
-- name: copy file to cni directory
-  copy:
-    src: cni
+- name: Unarchive cni binary for arm64
+  unarchive:
+    src: arm64/cni-arm64.tar.gz
     dest: /opt/
-    mode: "0755"
+    remote_src: no
+  retries: 10
+  delay: 5
+  register: result
+  until: result is not failed
+  when: 
+    - ansible_architecture == "aarch64"
+
+- name: Unarchive cni binary for amd64
+  unarchive:
+    src: amd64/cni-amd64.tar.gz
+    dest: /opt/
+    remote_src: no
+  retries: 10
+  delay: 5
+  register: result
+  until: result is not failed
+  when: 
+    - ansible_architecture == "x86_64"
 
 - name: copy file to remote cni directory
   copy:
@@ -30,232 +48,267 @@
     remote_src: "yes"
   delegate_to: "{{ groups['baremetal'][0] }}"
 
-- name: copy helm file to cni /usr/local/bin/
-  copy:
-    src: helm
+- name: Unarchive Helm binary for arm64
+  unarchive:
+    src: arm64/helm-v3.0.0-linux-arm64.tar.gz
     dest: /usr/local/bin/
-    mode: "0755"
-  delegate_to: "{{ groups['baremetal'][0] }}"
-
-- name: copy helm-push file to helm_plugin_path
-  copy:
-    src: helm-push
-    dest: /root/.local/share/helm/plugins/
-    mode: "0755"
-  delegate_to: "{{ groups['baremetal'][0] }}"
-
-- name: Update apt cache
-  shell: apt update -y
-  register: apt_result
-  until: apt_result.rc == 0
-  retries: 12
+  retries: 10
   delay: 5
-  when:
-    - ansible_distribution == "Ubuntu"
+  register: result
+  until: result is not failed
+  when: 
+    - ansible_architecture == "aarch64"
 
-- name: clean yum cache
-  shell: yum clean all
-  retries: 12
+- name: Unarchive Helm binary for amd64
+  unarchive:
+    src: amd64/helm-v3.0.0-linux-amd64.tar.gz
+    dest: /usr/local/bin/
+  retries: 10
   delay: 5
-  when:
-    - ansible_distribution == "openEuler"
+  register: result
+  until: result is not failed
+  when: 
+    - ansible_architecture == "x86_64"
 
-- name: Update yum cache
-  shell: yum update -y
-  register: yum_result
-  until: yum_result.rc == 0
-  retries: 12
-  delay: 5
-  when:
-    - ansible_distribution == "openEuler"
-
-- name: 创建 /etc/kubernetes 目录
-  file: 
-    name: "/etc/kubernetes"
-    state: directory
-
-- name: 查看 docker 是否安装
-  shell: docker info
-  register: docker_install_info
-  ignore_errors: true
-
-- name: 查看 kubeadm 是否安装
-  shell: kubeadm version
-  register: kubeadm_install_info
-  ignore_errors: true
-
-- name: remove apparmor
-  apt:
-    state: absent
-    name: "{{ packages }}"
-  vars:
-    packages:
-      - apparmor
-      - ufw
-  when:
-    - ansible_distribution == "Ubuntu"
-
-- name: Ubuntu Install some package
-  apt:
-    state: present
-    name: "{{ packages }}"
-  vars:
-    packages:
-      - python3-pip
-      - python3-docker
-      - python3-libselinux
-      - git
-      - rsync
-      - iptables
-      - sg3-utils-udev
-      - jq
-      - ipmitool
-      - ceph-fuse
-  when:
-    - ansible_distribution == "Ubuntu"
-
-- name: Openeuler Install some package
-  yum:
-    state: present
-    name: "{{ packages }}"
-  vars:
-    packages:
-      - python3-pip
-      - python3-docker
-      - python3-libselinux
-      - git
-      - rsync
-      - iptables
-      - jq
-      - ipmitool
-      - bash-completion
-  when:
-    - ansible_distribution == "openEuler"
-
-- name: Ubuntu 安装 docker
-  apt:
-    name: 
-    - docker-ce
-    - docker-ce-cli
-    - containerd.io
-    state: present
-  when:
-    - docker_install_info is not success
-    - ansible_distribution == "Ubuntu"
-
-- name: openEuler 安装 docker
-  yum:
-    name: "{{ packages}}"
-    state: present
-  vars:
-    packages:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-  when:
-    - docker_install_info is not success
-    - ansible_distribution == "openEuler"
-
-- name: 创建 /etc/docker 目录
-  become: true
+- name: Create Helm-push directory
   file:
-    path: /etc/docker
+    path: /root/.local/share/helm/plugins/helm-push
     state: directory
-    mode: 0755
 
-- name: 确认 Docker 配置是否有修改
-  template:
-    src: docker-daemon.json.j2
-    dest: /etc/docker/daemon.json
-    owner: root
-    mode: 0644
-  register: configuration_result
+- name: Unarchive Helm-push binary for arm64
+  unarchive:
+    src: arm64/helm-push_0.10.3_linux_arm64.tar.gz
+    dest: /root/.local/share/helm/plugins/helm-push
+  retries: 10
+  delay: 5
+  register: result
+  until: result is not failed
+  when: 
+    - ansible_architecture == "aarch64"
 
-- name: reload docker daemon
-  shell: "kill -SIGHUP $(pidof dockerd)"
-  args:
-    executable: /bin/bash
-  ignore_errors: true
+- name: Unarchive Helm-push binary for amd64
+  unarchive:
+    src: amd64/helm-push_0.10.3_linux_amd64.tar.gz
+    dest: /root/.local/share/helm/plugins/helm-push
+  retries: 10
+  delay: 5
+  register: result
+  until: result is not failed
+  when: 
+    - ansible_architecture == "x86_64"
+
+# - name: Update apt cache
+#   shell: apt update -y
+#   register: apt_result
+#   until: apt_result.rc == 0
+#   retries: 12
+#   delay: 5
+#   when:
+#     - ansible_distribution == "Ubuntu"
+
+# - name: clean yum cache
+#   shell: yum clean all
+#   retries: 12
+#   delay: 5
+#   when:
+#     - ansible_distribution == "openEuler" 
+
+# - name: Update yum cache
+#   shell: yum update -y
+#   register: yum_result
+#   until: yum_result.rc == 0
+#   retries: 12
+#   delay: 5
+#   when:
+#     - ansible_distribution == "openEuler" 
   
-- name: 设置 Docker 开机自启
-  service:
-    name: docker
-    state: started
-    enabled: yes
+# - name: 创建 /etc/kubernetes 目录
+#   file: 
+#     name: "/etc/kubernetes"
+#     state: directory
 
-- name: Ubuntu 安装 kubeadm kubelet kubectl
-  apt: 
-    name:
-    - "kubectl=1.23.5-00"
-    - "kubelet=1.23.5-00"
-    - "kubeadm=1.23.5-00"
-    state: present
-  when:
-    - kubeadm_install_info is not success
-    - ansible_distribution == "Ubuntu"
+# - name: 查看 docker 是否安装
+#   shell: docker info
+#   register: docker_install_info
+#   ignore_errors: true
 
-- name: openEuler 安装 kubeadm kubelet kubectl
-  yum: 
-    name: "{{ packages }}"
-    state: present
-  vars:
-    packages:
-      - "kubelet-1.23.5-0"
-      - "kubeadm-1.23.5-0"
-      - "kubectl-1.23.5-0"
-  when:
-    - kubeadm_install_info is not success
-    - ansible_distribution == "openEuler"
+# - name: 查看 kubeadm 是否安装
+#   shell: kubeadm version
+#   register: kubeadm_install_info
+#   ignore_errors: true
 
-- name: Ubuntu 安装 etcdctl 工具
-  apt:
-    name:
-    - etcd-client
-    state: present
-  when:
-    - ansible_distribution == "Ubuntu"
+# - name: remove apparmor
+#   apt:
+#     state: absent
+#     name: "{{ packages }}"
+#   vars:
+#     packages:
+#       - apparmor
+#       - ufw
+#   when:
+#     - ansible_distribution == "Ubuntu"
 
-- name: openEuler 安装 etcd 工具
-  yum:
-    state: present
-    name: "{{ packages }}"
-  vars:
-    packages:
-      - etcd
-  when:
-    - ansible_distribution == "openEuler"
+# - name: Ubuntu Install some package
+#   apt:
+#     state: present
+#     name: "{{ packages }}"
+#   vars:
+#     packages:
+#       - python3-pip
+#       - python3-docker
+#       - python3-libselinux
+#       - git
+#       - rsync
+#       - iptables
+#       - sg3-utils-udev
+#       - jq
+#       - ipmitool
+#       - ceph-fuse
+#   when:
+#     - ansible_distribution == "Ubuntu"
 
-- name: Ubuntu 配置 kubectl 命令行自动补全
-  shell: kubectl completion bash > /usr/share/bash-completion/completions/kubectl
-  when:
-    - ansible_distribution == "Ubuntu"
+# - name: Openeuler Install some package
+#   yum:
+#     state: present
+#     name: "{{ packages }}"
+#   vars:
+#     packages:
+#       - python3-pip
+#       - python3-docker
+#       - python3-libselinux
+#       - git
+#       - rsync
+#       - iptables
+#       - jq
+#       - ipmitool
+#       - bash-completion
+#   when:
+#     - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
 
-- name: Openeuler 配置 kubectl 命令行自动补全
-  shell: echo "source <(kubectl completion bash)" >> ~/.bashrc
-  when:
-    - ansible_distribution == "openEuler"
+# - name: Ubuntu 安装 docker
+#   apt:
+#     name: 
+#     - docker-ce
+#     - docker-ce-cli
+#     - containerd.io
+#     state: present
+#   when:
+#     - docker_install_info is not success
+#     - ansible_distribution == "Ubuntu"
 
-- name: Docker Login
-  docker_login:
-    registry: "{{ harbor_address }}"
-    username: "{{ harbor_username }}"
-    debug: true
-    password: "{{ harbor_password }}"
-  when:
-    - enable_docker_auth | bool
+# - name: openEuler 安装 docker
+#   yum:
+#     name: "{{ packages}}"
+#     state: present
+#   vars:
+#     packages:
+#       - docker-ce
+#       - docker-ce-cli
+#       - containerd.io
+#   when:
+#     - docker_install_info is not success
+#     - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
 
-- name: openEuler 设置防火墙规则
-  shell: iptables -P FORWARD ACCEPT
-  when:
-    - ansible_distribution == "openEuler"
+# - name: 创建 /etc/docker 目录
+#   become: true
+#   file:
+#     path: /etc/docker
+#     state: directory
+#     mode: 0755
 
-- name: Disable system swap partition table
-  shell: "swapoff -a && sysctl -w vm.swappiness=0"
-  ignore_errors: true
+# - name: 确认 Docker 配置是否有修改
+#   template:
+#     src: docker-daemon.json.j2
+#     dest: /etc/docker/daemon.json
+#     owner: root
+#     mode: 0644
+#   register: configuration_result
 
-- name: Delete fstab swap config
-  lineinfile:
-    path: /etc/fstab
-    regexp: 'swap'
-    state: absent
-    backup: yes
+# - name: reload docker daemon
+#   shell: "kill -SIGHUP $(pidof dockerd)"
+#   args:
+#     executable: /bin/bash
+#   ignore_errors: true
+  
+# - name: 设置 Docker 开机自启
+#   service:
+#     name: docker
+#     state: started
+#     enabled: yes
+
+# - name: Ubuntu 安装 kubeadm kubelet kubectl
+#   apt: 
+#     name:
+#     - "kubectl=1.23.5-00"
+#     - "kubelet=1.23.5-00"
+#     - "kubeadm=1.23.5-00"
+#     state: present
+#   when:
+#     - kubeadm_install_info is not success
+#     - ansible_distribution == "Ubuntu"
+
+# - name: openEuler 安装 kubeadm kubelet kubectl
+#   yum: 
+#     name: "{{ packages }}"
+#     state: present
+#   vars:
+#     packages:
+#       - "kubelet-1.23.5-0"
+#       - "kubeadm-1.23.5-0"
+#       - "kubectl-1.23.5-0"
+#   when:
+#     - kubeadm_install_info is not success
+#     - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
+
+# - name: Ubuntu 安装 etcdctl 工具
+#   apt:
+#     name:
+#     - etcd-client
+#     state: present
+#   when:
+#     - ansible_distribution == "Ubuntu"
+
+# - name: openEuler 安装 etcd 工具
+#   yum:
+#     state: present
+#     name: "{{ packages }}"
+#   vars:
+#     packages:
+#       - etcd
+#   when:
+#     - ansible_distribution == "openEuler"
+
+# - name: Ubuntu 配置 kubectl 命令行自动补全
+#   shell: kubectl completion bash > /usr/share/bash-completion/completions/kubectl
+#   when:
+#     - ansible_distribution == "Ubuntu"
+
+# - name: Openeuler 配置 kubectl 命令行自动补全
+#   shell: echo "source <(kubectl completion bash)" >> ~/.bashrc
+#   when:
+#     - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
+
+# - name: Docker Login
+#   docker_login:
+#     registry: "{{ harbor_address }}"
+#     username: "{{ harbor_username }}"
+#     debug: true
+#     password: "{{ harbor_password }}"
+#   when:
+#     - enable_docker_auth | bool
+
+# - name: openEuler 设置防火墙规则
+#   shell: iptables -P FORWARD ACCEPT
+#   when:
+#     - ansible_distribution == "openEuler" or ansible_distribution == "CentOS"
+
+# - name: Disable system swap partition table
+#   shell: "swapoff -a && sysctl -w vm.swappiness=0"
+#   ignore_errors: true
+
+# - name: Delete fstab swap config
+#   lineinfile:
+#     path: /etc/fstab
+#     regexp: 'swap'
+#     state: absent
+#     backup: yes
